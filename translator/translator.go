@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 	"github.com/golang/protobuf/ptypes/struct"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	// dbv1 "google.golang.org/api/datastore/v1"
-	dbv2 "google.golang.org/appengine/datastore"
+	//"github.com/golang/protobuf/ptypes/timestamp"
+	dbv2 "google.golang.org/api/datastore/v1"
+	//dbv2 "google.golang.org/appengine/datastore"
 	//"github.com/Sheshagiri/protobuf-struct/models"
 	"github.com/golang/protobuf/proto"
 	"strings"
@@ -26,22 +26,31 @@ func TranslateToDatastore(src interface{}) {
 
 
 func ProtoToEntity(src proto.Message) dbv2.Entity {
-	l := reflect.ValueOf(src).Elem()
+	srcValues := reflect.ValueOf(src).Elem()
 	dst := dbv2.Entity{}
-	properties := make([]dbv2.Property, 0)
-	for i :=0; i < l.NumField(); i++ {
-		name := l.Type().Field(i).Name
+	properties := make(map[string]dbv2.Value)
+	for i :=0; i < srcValues.NumField(); i++ {
+		name := srcValues.Type().Field(i).Name
 		if !strings.Contains(name, "XXX_") {
-			value := l.Field(i).Interface()
+			value := srcValues.Field(i).Interface()
 			//fmt.Printf("Type: %v, Name: %v, Value: %v\n", l.Field(i).Type(), name, value)
-			properties = append(properties, dbv2.Property{
-				Name:name,
-				Value: value,
-			})
+			switch srcValues.Type().Field(i).Type.String() {
+			case "string":
+				fmt.Println("string value")
+				properties[name] = dbv2.Value{
+					StringValue: fmt.Sprint(value),
+				}
+			case "*timestamp.Timestamp":
+				fmt.Println("*timestamp.Timestamp")
+				properties[name] = dbv2.Value{
+					TimestampValue: fmt.Sprint(value),
+				}
+			case "*structpb.Struct":
+				fmt.Println("convert to *structpb.Struct")
+			}
 		}
 	}
 	dst.Properties = properties
-	//fmt.Println(dst)
 	return dst
 }
 
@@ -57,9 +66,6 @@ func EntityToProto(src dbv2.Entity, dst proto.Message) {
 				dstValues.Field(i).SetString(fmt.Sprint(fieldValue))
 			case "*timestamp.Timestamp":
 				fmt.Println(fieldValue)
-				timestamp.Timestamp{
-
-				}
 			case "*structpb.Struct":
 				fmt.Println("convert to *structpb.Struct")
 			}
@@ -67,21 +73,12 @@ func EntityToProto(src dbv2.Entity, dst proto.Message) {
 	}
 }
 
-func getProperty(properties []dbv2.Property, name string) interface{} {
-	for _, property := range properties {
-		if property.Name == name {
-			return property.Value
-		}
-	}
-	return nil
+func getProperty(properties map[string]dbv2.Value, name string) dbv2.Value {
+	return properties[name]
 }
 
 func getValue(src interface{}, field string) {
 	r := reflect.ValueOf(src)
 	f := reflect.Indirect(r).FieldByName(field)
 	fmt.Println(f.Interface())
-}
-
-func decodeValue(v dbv2.Property) interface{}{
-	return nil
 }

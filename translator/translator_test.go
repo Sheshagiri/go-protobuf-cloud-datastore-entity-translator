@@ -4,9 +4,9 @@ import (
 	"testing"
 	"github.com/Sheshagiri/protobuf-struct/models"
 	"github.com/golang/protobuf/ptypes"
-	dbv2 "google.golang.org/appengine/datastore"
-	"fmt"
+	dbv2 "google.golang.org/api/datastore/v1"
 	"github.com/stretchr/testify/assert"
+	"fmt"
 )
 
 func TestTranslateToDatastore(t *testing.T) {
@@ -25,27 +25,22 @@ func TestProtoToEntity(t *testing.T) {
 	}
 	entity := ProtoToEntity(p)
 	assert.NotNil(t,entity.Properties)
-
-	execRequest := &execution.ExecutionRequest{}
-	EntityToProto(entity, execRequest)
-	fmt.Println(execRequest)
+	fmt.Println(entity)
 }
 
 func TestEntityToProto(t *testing.T) {
 	entity := dbv2.Entity{}
-	properties := make([]dbv2.Property,0)
-	properties = append(properties, dbv2.Property{
-		Name:"Action",
-		Value:"action-1",
-	})
-	properties = append(properties, dbv2.Property{
-		Name:"Uuid",
-		Value:"some-random-uuid",
-	})
-	properties = append(properties, dbv2.Property{
-		Name:"StartedOn",
-		Value:ptypes.TimestampNow(),
-	})
+	var properties map[string]dbv2.Value
+
+	properties["Action"] = dbv2.Value{
+		StringValue:"action-1",
+	}
+	properties["Uuid"] = dbv2.Value{
+		StringValue:"some-random-uuid",
+	}
+	properties["StartedOn"] = dbv2.Value{
+		TimestampValue:ptypes.TimestampString(ptypes.TimestampNow()),
+	}
 	entity.Properties = properties
 	execRequest := &execution.ExecutionRequest{}
 	EntityToProto(entity, execRequest)
