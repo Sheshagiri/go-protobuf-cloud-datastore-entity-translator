@@ -8,7 +8,7 @@ import (
 	dbv2 "google.golang.org/api/datastore/v1"
 	//dbv2 "google.golang.org/appengine/datastore"
 	//"github.com/Sheshagiri/protobuf-struct/models"
-	"github.com/golang/protobuf/descriptor"
+	"errors"
 	"github.com/golang/protobuf/proto"
 	"strings"
 )
@@ -94,63 +94,46 @@ func getValue(src interface{}, field string) {
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
 func ProtoMessageToDatastoreEntity(src proto.Message) dbv2.Entity {
 	srcValues := reflect.ValueOf(src).Elem()
-	_, md := descriptor.ForMessage(src.(descriptor.Message))
 	entity := dbv2.Entity{}
 	properties := make(map[string]dbv2.Value)
-	for _, field := range md.GetField() {
-		fieldName := field.GetName()
-		fieldType := field.GetType().String()
-		fieldValue := srcValues.Field(int(field.GetNumber()) - 1)
-		fmt.Printf("type: %s, name: %s, value: %v\n", fieldType, fieldName, fieldValue)
 
-		switch fieldType {
-		case "TYPE_DOUBLE":
-			fmt.Println("TYPE_DOUBLE")
-		case "TYPE_FLOAT":
-			fmt.Println("TYPE_FLOAT")
-		case "TYPE_UINT64":
-			fmt.Println("TYPE_UINT64")
-		case "TYPE_INT32", "TYPE_INT64":
-			fmt.Println("TYPE_INT32")
-			properties[fieldName] = dbv2.Value{
-				IntegerValue: fieldValue.Int(),
+	for i := 0; i < srcValues.NumField(); i++ {
+		name := srcValues.Type().Field(i).Name
+		if !strings.ContainsAny(name, "XXX_") {
+			fType := srcValues.Field(i).Type().Kind().String()
+			value, err := toValue(fType, srcValues.Field(i))
+			// fmt.Printf("name:%s, type:%v, value:%v\n",name,fType,value)
+			if err == nil {
+				properties[name] = value
+			} else {
+				fmt.Printf("err: %v\n", err)
 			}
-		case "TYPE_FIXED64":
-			fmt.Println("TYPE_FIXED64")
-		case "TYPE_FIXED32":
-			fmt.Println("TYPE_FIXED32")
-		case "TYPE_BOOL":
-			fmt.Println("TYPE_BOOL")
-			properties[fieldName] = dbv2.Value{
-				BooleanValue: fieldValue.Bool(),
-			}
-		case "TYPE_STRING":
-			fmt.Println("TYPE_STRING")
-			properties[fieldName] = dbv2.Value{
-				StringValue: fieldValue.String(),
-			}
-		case "TYPE_GROUP":
-			fmt.Println("TYPE_GROUP")
-		case "TYPE_MESSAGE":
-			fmt.Println("TYPE_MESSAGE")
-		case "TYPE_BYTES":
-			fmt.Println("TYPE_BYTES")
-		case "TYPE_UINT32":
-			fmt.Println("TYPE_UINT32")
-		case "TYPE_ENUM":
-			fmt.Println("TYPE_ENUM")
-		case "TYPE_SFIXED32":
-			fmt.Println("TYPE_SFIXED32")
-		case "TYPE_SFIXED64":
-			fmt.Println("TYPE_SFIXED64")
-		case "TYPE_SINT32", "TYPE_SINT64":
-			fmt.Println("TYPE_SINT32")
-		default:
-			fmt.Println("inside default case")
 		}
-		fmt.Println("----")
 	}
+	fmt.Println(properties)
 	entity.Properties = properties
 	fmt.Println(entity)
 	return entity
+}
+
+func toValue(fType string, fValue reflect.Value) (value dbv2.Value, err error) {
+	switch fType {
+	case "string":
+		value.StringValue = fValue.String()
+	case "bool":
+		value.BooleanValue = fValue.Bool()
+	case "int32", "int64":
+		value.IntegerValue = fValue.Int()
+	case "float32", "float64":
+		value.DoubleValue = fValue.Float()
+	case "slice":
+		err = errors.New("datatype[slice] not supported")
+	case "map":
+		err = errors.New("datatype[map] not supported")
+	case "ptr":
+		err = errors.New("datatype[ptr] not supported")
+	default:
+		fmt.Println("inside default case")
+	}
+	return value, err
 }
