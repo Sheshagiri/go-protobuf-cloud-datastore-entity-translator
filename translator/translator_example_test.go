@@ -57,6 +57,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 		Int64Key:  64,
 		FloatKey:  float32,
 		DoubleKey: float64(10.2121),
+		BytesKey:[]byte("this is a byte array"),
 	}
 	/*StringArrayKey:[]string{
 		"element-1",
@@ -81,4 +82,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	assert.Equal(t, int64(64), entity.Properties["Int64Key"].IntegerValue)
 	assert.Equal(t, float64(float32), entity.Properties["FloatKey"].DoubleValue)
 	assert.Equal(t, float64(10.2121), entity.Properties["DoubleKey"].DoubleValue)
+	//TODO BlobValue returns a string
+	assert.Equal(t, string([]byte("this is a byte array")), entity.Properties["BytesKey"].BlobValue)
+
 }

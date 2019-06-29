@@ -127,7 +127,15 @@ func toValue(fType string, fValue reflect.Value) (value dbv2.Value, err error) {
 	case "float32", "float64":
 		value.DoubleValue = fValue.Float()
 	case "slice":
-		err = errors.New("datatype[slice] not supported")
+		fmt.Println("inside slice")
+		fmt.Println(fValue.Type().Elem().Kind())
+		if fValue.Type().Elem().Kind() == reflect.Uint8 {
+			fmt.Println("matches")
+			value.BlobValue = string(fValue.Bytes())
+		} else {
+			fmt.Println(reflect.Indirect(fValue).String())
+			err = errors.New("datatype[slice] not supported")
+		}
 	case "map":
 		err = errors.New("datatype[map] not supported")
 	case "ptr":
