@@ -1,0 +1,11 @@
+syntax="proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+message ExecutionRequest {
+    string uuid=1;
+    string action=2;
+    google.protobuf.Timestamp started_on=3;
+    google.protobuf.Struct parameters=4;
+}
