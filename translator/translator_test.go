@@ -2,7 +2,7 @@ package translator
 
 import (
 	"testing"
-	"github.com/Sheshagiri/protobuf-struct/models"
+	"github.com/Sheshagiri/protobuf-struct/models/execution"
 	"github.com/golang/protobuf/ptypes"
 	dbv2 "google.golang.org/api/datastore/v1"
 	"github.com/stretchr/testify/assert"
