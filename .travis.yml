@@ -16,6 +16,8 @@ notifications:
     on_success: change
     on_failure: always
 
+install: true
+
 script:
   - cd translator
   - go test -v ./...
