@@ -58,11 +58,14 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 		FloatKey:  float32,
 		DoubleKey: float64(10.2121),
 		BytesKey:[]byte("this is a byte array"),
-	}
-	/*StringArrayKey:[]string{
+		StringArrayKey:[]string{
 		"element-1",
 		"element-2",
-	},*/
+		},
+		Int32ArrayKey:[]int32{
+			1,2,3,4,5,6,
+		},
+	}
 	/*MapStringInt32:map[string]int32{
 		"int-key-1":1,
 		"int-key-2":2,
@@ -70,9 +73,6 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	MapStringString:map[string]string{
 		"string-key-1":"k1",
 		"string-key-2":"k2",
-	},
-	Int32ArrayKey:[]int32{
-		1,2,3,4,5,6,
 	},*/
 	entity := ProtoMessageToDatastoreEntity(e1)
 
@@ -84,5 +84,12 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	assert.Equal(t, float64(10.2121), entity.Properties["DoubleKey"].DoubleValue)
 	//TODO BlobValue returns a string
 	assert.Equal(t, string([]byte("this is a byte array")), entity.Properties["BytesKey"].BlobValue)
-
+	//assert string array
+	assert.Equal(t,"element-1",entity.Properties["StringArrayKey"].ArrayValue.Values[0].StringValue)
+	assert.Equal(t,"element-2",entity.Properties["StringArrayKey"].ArrayValue.Values[1].StringValue)
+	//assert int32 array
+	assert.Equal(t,int64(1),entity.Properties["Int32ArrayKey"].ArrayValue.Values[0].IntegerValue)
+	assert.Equal(t,int64(3),entity.Properties["Int32ArrayKey"].ArrayValue.Values[2].IntegerValue)
+	assert.Equal(t,int64(5),entity.Properties["Int32ArrayKey"].ArrayValue.Values[4].IntegerValue)
+	assert.Equal(t,int64(6),entity.Properties["Int32ArrayKey"].ArrayValue.Values[5].IntegerValue)
 }

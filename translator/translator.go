@@ -110,9 +110,10 @@ func ProtoMessageToDatastoreEntity(src proto.Message) dbv2.Entity {
 			}
 		}
 	}
-	fmt.Println(properties)
 	entity.Properties = properties
-	fmt.Println(entity)
+	fmt.Println("@@@@@@@")
+	fmt.Printf("Entity: %v\n",entity)
+	fmt.Println("@@@@@@@")
 	return entity
 }
 
@@ -127,14 +128,20 @@ func toValue(fType string, fValue reflect.Value) (value dbv2.Value, err error) {
 	case "float32", "float64":
 		value.DoubleValue = fValue.Float()
 	case "slice":
-		fmt.Println("inside slice")
-		fmt.Println(fValue.Type().Elem().Kind())
+		//TODO add complex type to the slice
 		if fValue.Type().Elem().Kind() == reflect.Uint8 {
-			fmt.Println("matches")
+			//BlobValue is a string in the datastore entity proto
 			value.BlobValue = string(fValue.Bytes())
 		} else {
-			fmt.Println(reflect.Indirect(fValue).String())
-			err = errors.New("datatype[slice] not supported")
+			size := fValue.Len()
+			values := make([]*dbv2.Value,size)
+			for i := 0; i < size ; i++ {
+				val, _ := toValue(fValue.Type().Elem().Kind().String(),fValue.Index(i))
+				values[i] = &val
+			}
+			value.ArrayValue = &dbv2.ArrayValue{
+				Values:values,
+			}
 		}
 	case "map":
 		err = errors.New("datatype[map] not supported")
