@@ -1,7 +1,7 @@
 package translator
 
 import (
-	"github.com/Sheshagiri/protobuf-struct/models/example"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/datastore/v1"
 	"testing"
