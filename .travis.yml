@@ -4,5 +4,6 @@ go:
   - "1.12"
 
 script:
-  go test -v ./... translator
+  cd translator
+  go test -v ./...
 
