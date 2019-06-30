@@ -1,87 +1,98 @@
 package translator
 
 import (
+	"errors"
 	"fmt"
-	"reflect"
-	"github.com/golang/protobuf/ptypes/struct"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	// dbv1 "google.golang.org/api/datastore/v1"
-	dbv2 "google.golang.org/appengine/datastore"
-	//"github.com/Sheshagiri/protobuf-struct/models"
 	"github.com/golang/protobuf/proto"
+	dbv2 "google.golang.org/api/datastore/v1"
+	"reflect"
 	"strings"
 )
 
-func TranslateToDatastore(src interface{}) {
-
-	t := reflect.TypeOf(src)
-	//v := reflect.ValueOf(src)
-	for i := 0; i < t.NumField(); i++ {
-		fmt.Printf("%+v\n", t.Field(i))
-		if t.Field(i).Type.Kind() == reflect.TypeOf(structpb.Struct{}).Kind()   {
-			fmt.Println("yeyy")
-		}
-	}
+func getProperty(properties map[string]dbv2.Value, name string) dbv2.Value {
+	return properties[name]
 }
 
+// ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
+func ProtoMessageToDatastoreEntity(src proto.Message) dbv2.Entity {
+	srcValues := reflect.ValueOf(src).Elem()
+	entity := dbv2.Entity{}
+	properties := make(map[string]dbv2.Value)
 
-func ProtoToEntity(src proto.Message) dbv2.Entity {
-	l := reflect.ValueOf(src).Elem()
-	dst := dbv2.Entity{}
-	properties := make([]dbv2.Property, 0)
-	for i :=0; i < l.NumField(); i++ {
-		name := l.Type().Field(i).Name
-		if !strings.Contains(name, "XXX_") {
-			value := l.Field(i).Interface()
-			//fmt.Printf("Type: %v, Name: %v, Value: %v\n", l.Field(i).Type(), name, value)
-			properties = append(properties, dbv2.Property{
-				Name:name,
-				Value: value,
-			})
+	for i := 0; i < srcValues.NumField(); i++ {
+		name := srcValues.Type().Field(i).Name
+		if !strings.ContainsAny(name, "XXX_") {
+			fType := srcValues.Field(i).Type().Kind().String()
+			value, err := toValue(fType, srcValues.Field(i))
+			// fmt.Printf("name:%s, type:%v, value:%v\n",name,fType,value)
+			if err == nil {
+				properties[name] = value
+			} else {
+				fmt.Printf("err: %v\n", err)
+			}
 		}
 	}
-	dst.Properties = properties
-	//fmt.Println(dst)
-	return dst
+	entity.Properties = properties
+	fmt.Println("@@@@@@@")
+	fmt.Printf("Entity: %v\n", entity)
+	fmt.Println("@@@@@@@")
+	return entity
 }
 
-func EntityToProto(src dbv2.Entity, dst proto.Message) {
+func DatastoreEntityToProtoMessage(src dbv2.Entity, dst proto.Message) {
 	dstValues := reflect.ValueOf(dst).Elem()
-	for i :=0; i < dstValues.NumField(); i++ {
-		fieldName := dstValues.Type().Field(i).Name
-		if !strings.Contains(fieldName, "XXX_") {
-			fieldValue := getProperty(src.Properties,fieldName)
-			fmt.Println(dstValues.Type().Field(i).Type.String())
-			switch dstValues.Type().Field(i).Type.String() {
+	for i := 0; i < dstValues.NumField(); i++ {
+		fName := dstValues.Type().Field(i).Name
+		if !strings.Contains(fName, "XXX_") {
+			fValue := getProperty(src.Properties, fName)
+			fType := dstValues.Type().Field(i).Type.String()
+			fmt.Printf("name: %s, type: %s\n", fName, fType)
+			switch fType {
 			case "string":
-				dstValues.Field(i).SetString(fmt.Sprint(fieldValue))
-			case "*timestamp.Timestamp":
-				fmt.Println(fieldValue)
-				timestamp.Timestamp{
-
-				}
-			case "*structpb.Struct":
-				fmt.Println("convert to *structpb.Struct")
+				dstValues.Field(i).SetString(fValue.StringValue)
+			case "bool":
+				dstValues.Field(i).SetBool(fValue.BooleanValue)
+			case "int32", "int64":
+				dstValues.Field(i).SetInt(fValue.IntegerValue)
+			case "float32", "float64":
+				dstValues.Field(i).SetFloat(fValue.DoubleValue)
 			}
 		}
 	}
 }
 
-func getProperty(properties []dbv2.Property, name string) interface{} {
-	for _, property := range properties {
-		if property.Name == name {
-			return property.Value
+func toValue(fType string, fValue reflect.Value) (value dbv2.Value, err error) {
+	switch fType {
+	case "string":
+		value.StringValue = fValue.String()
+	case "bool":
+		value.BooleanValue = fValue.Bool()
+	case "int32", "int64":
+		value.IntegerValue = fValue.Int()
+	case "float32", "float64":
+		value.DoubleValue = fValue.Float()
+	case "slice":
+		//TODO add complex type to the slicell
+		if fValue.Type().Elem().Kind() == reflect.Uint8 {
+			//BlobValue is a string in the datastore entity proto
+			value.BlobValue = string(fValue.Bytes())
+		} else {
+			size := fValue.Len()
+			values := make([]*dbv2.Value, size)
+			for i := 0; i < size; i++ {
+				val, _ := toValue(fValue.Type().Elem().Kind().String(), fValue.Index(i))
+				values[i] = &val
+			}
+			value.ArrayValue = &dbv2.ArrayValue{
+				Values: values,
+			}
 		}
+	case "map":
+		err = errors.New("datatype[map] not supported")
+	case "ptr":
+		err = errors.New("datatype[ptr] not supported")
+	default:
+		fmt.Println("inside default case")
 	}
-	return nil
-}
-
-func getValue(src interface{}, field string) {
-	r := reflect.ValueOf(src)
-	f := reflect.Indirect(r).FieldByName(field)
-	fmt.Println(f.Interface())
-}
-
-func decodeValue(v dbv2.Property) interface{}{
-	return nil
+	return value, err
 }

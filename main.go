@@ -1,18 +1,19 @@
 package main
 
 import (
-	"log"
 	"github.com/Sheshagiri/protobuf-struct/models"
 	"github.com/golang/protobuf/ptypes"
+	"log"
 	//stpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/golang/protobuf/jsonpb"
-	"os"
 	"cloud.google.com/go/datastore"
 	"context"
-	"github.com/golang/protobuf/proto"
 	"fmt"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"os"
 	"reflect"
 )
+
 var db *datastore.Client
 var ctx context.Context
 
@@ -33,13 +34,13 @@ func setupDatastore() {
 func main() {
 	setupDatastore()
 	execRequest1 := execution.ExecutionRequest{
-		Action:"a1",
-		Uuid:"uuuu-aaaa",
+		Action:    "a1",
+		Uuid:      "uuuu-aaaa",
 		StartedOn: ptypes.TimestampNow(),
 		//Parameters:[]byte("{\"key-3\": \"value-3\",\"key-4\": 4}"),
 	}
-	log.Printf("execution request1: %v\n",execRequest1)
-	jsonm := &jsonpb.Marshaler{Indent:" "}
+	log.Printf("execution request1: %v\n", execRequest1)
+	jsonm := &jsonpb.Marshaler{Indent: " "}
 	jsonm.Marshal(os.Stdout, &execRequest1)
 
 	/*key1 := datastore.NameKey("st2-saas-scheduler",execRequest1.Action, nil)
@@ -54,24 +55,24 @@ func main() {
 	if err := jsonpb.UnmarshalString(json, &execRequest2); err != nil {
 		log.Printf("Unmarshalling failed, %v\n", err)
 	}
-	log.Printf("execution request2: %v\n",execRequest2)
+	log.Printf("execution request2: %v\n", execRequest2)
 	jsonm.Marshal(os.Stdout, &execRequest2)
-	key2 := datastore.NameKey("st2-saas-scheduler","a2", nil)
+	key2 := datastore.NameKey("st2-saas-scheduler", "a2", nil)
 
-	props, err := datastore.SaveStruct(&execRequest2);
+	props, err := datastore.SaveStruct(&execRequest2)
 	if err != nil {
 		log.Printf("unable to save struct, %v", err)
 	}
-	fmt.Printf("properties are: %v",props)
+	fmt.Printf("properties are: %v", props)
 	if _, err := db.Put(ctx, key2, props); err != nil {
 		log.Printf("unable to save, %v", err)
 	}
 }
 
-func proto_to_entity(src proto.Message){
+func proto_to_entity(src proto.Message) {
 	//entity := datastore.Entity{}
 	t := reflect.TypeOf(src)
-	for i:=0; i < t.NumField(); i++ {
+	for i := 0; i < t.NumField(); i++ {
 		fmt.Printf("%+v\n", t.Field(i))
 	}
 	log.Println(src)
