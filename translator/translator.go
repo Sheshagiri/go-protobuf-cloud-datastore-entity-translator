@@ -33,9 +33,6 @@ func ProtoMessageToDatastoreEntity(src proto.Message) dbv2.Entity {
 		}
 	}
 	entity.Properties = properties
-	fmt.Println("@@@@@@@")
-	fmt.Printf("Entity: %v\n", entity)
-	fmt.Println("@@@@@@@")
 	return entity
 }
 
