@@ -1,9 +1,21 @@
 language: go
 
 go:
-  - "1.12"
+ - 1.12.x
+
+os: linux
+dist: trusty
+sudo: false
+
+branches:
+  only:
+  - master
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
 
 script:
-  cd translator
-  go test -v ./...
-
+  - cd translator
+  - go test -v ./...
