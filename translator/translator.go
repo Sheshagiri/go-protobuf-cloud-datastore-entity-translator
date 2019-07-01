@@ -54,6 +54,25 @@ func DatastoreEntityToProtoMessage(src dbv2.Entity, dst proto.Message) {
 				dstValues.Field(i).SetInt(fValue.IntegerValue)
 			case reflect.Float32, reflect.Float64:
 				dstValues.Field(i).SetFloat(fValue.DoubleValue)
+			case reflect.Map:
+				entity := fValue.EntityValue
+				if entity != nil {
+					switch dstValues.Type().Field(i).Type.String() {
+					// rudimentary impl
+					case "map[string]string":
+						m := make(map[string]string)
+						for k, v := range entity.Properties {
+							m[fmt.Sprint(k)] = v.StringValue
+						}
+						dstValues.Field(i).Set(reflect.ValueOf(m))
+					case "map[string]int32":
+						m := make(map[string]int32)
+						for k, v := range entity.Properties {
+							m[fmt.Sprint(k)] = int32(v.IntegerValue)
+						}
+						dstValues.Field(i).Set(reflect.ValueOf(m))
+					}
+				}
 			}
 		}
 	}
