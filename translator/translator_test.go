@@ -35,15 +35,16 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 		Int32ArrayKey: []int32{
 			1, 2, 3, 4, 5, 6,
 		},
+		EnumKey: example.ExampleEnumModel_ENUM1,
+		MapStringString: map[string]string{
+			"string-key-1": "k1",
+			"string-key-2": "k2",
+		},
+		MapStringInt32: map[string]int32{
+			"int-key-1": 1,
+			"int-key-2": 2,
+		},
 	}
-	/*MapStringInt32:map[string]int32{
-		"int-key-1":1,
-		"int-key-2":2,
-	},
-	MapStringString:map[string]string{
-		"string-key-1":"k1",
-		"string-key-2":"k2",
-	},*/
 	entity := ProtoMessageToDatastoreEntity(e1)
 
 	assert.Equal(t, "some random string key for testing", entity.Properties["StringKey"].StringValue)
@@ -62,6 +63,13 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	assert.Equal(t, int64(3), entity.Properties["Int32ArrayKey"].ArrayValue.Values[2].IntegerValue)
 	assert.Equal(t, int64(5), entity.Properties["Int32ArrayKey"].ArrayValue.Values[4].IntegerValue)
 	assert.Equal(t, int64(6), entity.Properties["Int32ArrayKey"].ArrayValue.Values[5].IntegerValue)
+	// enums are converted to int's in datastore
+	assert.Equal(t, int64(1), entity.Properties["EnumKey"].IntegerValue)
+	//assert map[string]string
+	assert.Equal(t, "k1", entity.Properties["MapStringString"].EntityValue.Properties["string-key-1"].StringValue)
+	assert.Equal(t, "k2", entity.Properties["MapStringString"].EntityValue.Properties["string-key-2"].StringValue)
+	assert.Equal(t, int64(1), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-1"].IntegerValue)
+	assert.Equal(t, int64(2), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-2"].IntegerValue)
 }
 
 func TestDatastoreEntityToProtoMessage(t *testing.T) {
@@ -78,13 +86,46 @@ func TestDatastoreEntityToProtoMessage(t *testing.T) {
 	properties["BoolKey"] = datastore.Value{
 		BooleanValue: false,
 	}
+	properties["EnumKey"] = datastore.Value{
+		IntegerValue: 2,
+	}
+	properties["MapStringString"] = datastore.Value{
+		EntityValue: &datastore.Entity{
+			Properties: map[string]datastore.Value{
+				"k1": datastore.Value{
+					StringValue: "some-string-key-1",
+				},
+				"k2": datastore.Value{
+					StringValue: "some-string-key-2",
+				},
+			},
+		},
+	}
+	properties["MapStringInt32"] = datastore.Value{
+		EntityValue: &datastore.Entity{
+			Properties: map[string]datastore.Value{
+				"int-key-1": datastore.Value{
+					IntegerValue: 10,
+				},
+				"int-key-2": datastore.Value{
+					IntegerValue: 20,
+				},
+			},
+		},
+	}
+
 	entity := datastore.Entity{
 		Properties: properties,
 	}
-	example := &example.ExampleDBModel{}
-	DatastoreEntityToProtoMessage(entity, example)
-	assert.Equal(t, properties["StringKey"].StringValue, example.GetStringKey())
-	assert.Equal(t, entity.Properties["Int64Key"].IntegerValue, example.GetInt64Key())
-	assert.Equal(t, entity.Properties["BoolKey"].BooleanValue, example.GetBoolKey())
-	assert.Equal(t, float64(64), entity.Properties["DoubleKey"].DoubleValue)
+	dbModel := &example.ExampleDBModel{}
+	DatastoreEntityToProtoMessage(entity, dbModel)
+	assert.Equal(t, properties["StringKey"].StringValue, dbModel.GetStringKey())
+	assert.Equal(t, entity.Properties["Int64Key"].IntegerValue, dbModel.GetInt64Key())
+	assert.Equal(t, entity.Properties["BoolKey"].BooleanValue, dbModel.GetBoolKey())
+	assert.Equal(t, entity.Properties["DoubleKey"].DoubleValue, dbModel.GetDoubleKey())
+	assert.Equal(t, example.ExampleEnumModel_ENUM2, dbModel.GetEnumKey())
+	//assert map[string]string
+	assert.Equal(t, map[string]string{"k1": "some-string-key-1", "k2": "some-string-key-2"}, dbModel.GetMapStringString())
+	//assert map[string]int32
+	assert.Equal(t, map[string]int32{"int-key-1": 10, "int-key-2": 20}, dbModel.GetMapStringInt32())
 }

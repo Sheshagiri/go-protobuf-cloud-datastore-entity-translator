@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	dbv2 "google.golang.org/api/datastore/v1"
+	//dbv1 "google.golang.org/appengine/datastore"
 	"reflect"
 	"strings"
 )
@@ -28,7 +29,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message) dbv2.Entity {
 			if err == nil {
 				properties[fName] = value
 			} else {
-				fmt.Printf("err: %v\n", err)
+				fmt.Printf("field: %s, err: %v\n", fName, err)
 			}
 		}
 	}
@@ -53,6 +54,25 @@ func DatastoreEntityToProtoMessage(src dbv2.Entity, dst proto.Message) {
 				dstValues.Field(i).SetInt(fValue.IntegerValue)
 			case reflect.Float32, reflect.Float64:
 				dstValues.Field(i).SetFloat(fValue.DoubleValue)
+			case reflect.Map:
+				entity := fValue.EntityValue
+				if entity != nil {
+					switch dstValues.Type().Field(i).Type.String() {
+					// rudimentary impl
+					case "map[string]string":
+						m := make(map[string]string)
+						for k, v := range entity.Properties {
+							m[fmt.Sprint(k)] = v.StringValue
+						}
+						dstValues.Field(i).Set(reflect.ValueOf(m))
+					case "map[string]int32":
+						m := make(map[string]int32)
+						for k, v := range entity.Properties {
+							m[fmt.Sprint(k)] = int32(v.IntegerValue)
+						}
+						dstValues.Field(i).Set(reflect.ValueOf(m))
+					}
+				}
 			}
 		}
 	}
@@ -85,7 +105,18 @@ func toValue(fValue reflect.Value) (value dbv2.Value, err error) {
 			}
 		}
 	case reflect.Map:
-		err = errors.New("datatype[map] not supported")
+		mapValues := reflect.ValueOf(fValue.Interface())
+		innerEntity := make(map[string]dbv2.Value)
+		for _, key := range mapValues.MapKeys() {
+			k := fmt.Sprint(key)
+			//TODO what if there is an error?
+			v, _ := toValue(mapValues.MapIndex(key))
+			//fmt.Printf("key; %v, value: %v\n",k,v)
+			innerEntity[k] = v
+		}
+		value.EntityValue = &dbv2.Entity{
+			Properties: innerEntity,
+		}
 	case reflect.Ptr:
 		err = errors.New("datatype[ptr] not supported")
 	default:
