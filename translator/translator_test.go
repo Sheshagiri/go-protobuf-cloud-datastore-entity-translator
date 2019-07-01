@@ -1,10 +1,12 @@
 package translator
 
 import (
+	"testing"
+
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/datastore/v1"
-	"testing"
 )
 
 func TestProtoMessageToDatastoreEntitySimple(t *testing.T) {
@@ -44,6 +46,12 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			"int-key-1": 1,
 			"int-key-2": 2,
 		},
+		StructKey: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
+			},
+		},
 	}
 	entity := ProtoMessageToDatastoreEntity(e1)
 
@@ -70,6 +78,9 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	assert.Equal(t, "k2", entity.Properties["MapStringString"].EntityValue.Properties["string-key-2"].StringValue)
 	assert.Equal(t, int64(1), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-1"].IntegerValue)
 	assert.Equal(t, int64(2), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-2"].IntegerValue)
+	//assert google.protobuf.Struct
+	assert.Equal(t, true, entity.Properties["StructKey"].EntityValue.Properties["struct-key-bool"].BooleanValue)
+	assert.Equal(t, "some random string in proto.Struct", entity.Properties["StructKey"].EntityValue.Properties["struct-key-string"].StringValue)
 }
 
 func TestDatastoreEntityToProtoMessage(t *testing.T) {
@@ -92,24 +103,16 @@ func TestDatastoreEntityToProtoMessage(t *testing.T) {
 	properties["MapStringString"] = datastore.Value{
 		EntityValue: &datastore.Entity{
 			Properties: map[string]datastore.Value{
-				"k1": datastore.Value{
-					StringValue: "some-string-key-1",
-				},
-				"k2": datastore.Value{
-					StringValue: "some-string-key-2",
-				},
+				"k1": {StringValue: "some-string-key-1"},
+				"k2": {StringValue: "some-string-key-2"},
 			},
 		},
 	}
 	properties["MapStringInt32"] = datastore.Value{
 		EntityValue: &datastore.Entity{
 			Properties: map[string]datastore.Value{
-				"int-key-1": datastore.Value{
-					IntegerValue: 10,
-				},
-				"int-key-2": datastore.Value{
-					IntegerValue: 20,
-				},
+				"int-key-1": {IntegerValue: 10},
+				"int-key-2": {IntegerValue: 20},
 			},
 		},
 	}

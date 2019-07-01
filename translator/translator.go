@@ -1,13 +1,18 @@
 package translator
 
 import (
-	"errors"
 	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	dbv2 "google.golang.org/api/datastore/v1"
+
 	//dbv1 "google.golang.org/appengine/datastore"
 	"reflect"
 	"strings"
+
+	"errors"
+
+	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 func getProperty(properties map[string]dbv2.Value, name string) dbv2.Value {
@@ -118,7 +123,34 @@ func toValue(fValue reflect.Value) (value dbv2.Value, err error) {
 			Properties: innerEntity,
 		}
 	case reflect.Ptr:
-		err = errors.New("datatype[ptr] not supported")
+		switch fValue.Type().String() {
+		case "*structpb.Struct":
+			fmt.Println("inside *structpb.Struct")
+			fields := fValue.Elem().FieldByName("Fields")
+			innerEntity := make(map[string]dbv2.Value)
+			for _, value := range fields.MapKeys() {
+				v := fields.MapIndex(value).Interface().(*structpb.Value)
+				//don't know if there is another way of doing this, trick here is *structpb.Value
+				if x, ok := v.GetKind().(*structpb.Value_StringValue); ok {
+					innerEntity[fmt.Sprint(value)] = dbv2.Value{StringValue: x.StringValue}
+				} else if x, ok := v.GetKind().(*structpb.Value_BoolValue); ok {
+					innerEntity[fmt.Sprint(value)] = dbv2.Value{BooleanValue: x.BoolValue}
+				} else if x, ok := v.GetKind().(*structpb.Value_NumberValue); ok {
+					//structpbStruct on supports float64
+					innerEntity[fmt.Sprint(value)] = dbv2.Value{DoubleValue: x.NumberValue}
+				} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
+					err = errors.New("list is not supported yet")
+					// TODO  figure out this
+					// innerEntity[fmt.Sprint(key)] = dbv2.Value{ArrayValue: x.ListValue}
+				} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
+					innerEntity[fmt.Sprint(value)] = dbv2.Value{NullValue: string(x.NullValue)}
+				}
+			}
+			value.EntityValue = &dbv2.Entity{Properties: innerEntity}
+		case "*timestamp.Timestamp":
+			fmt.Println("inside *timestamp.Timestamp")
+		}
+		//err = errors.New("datatype[ptr] not supported")
 	default:
 		fmt.Println("inside default case")
 	}
