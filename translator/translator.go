@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"errors"
-
+	//"cloud.google.com/go/datastore"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
@@ -78,6 +78,18 @@ func DatastoreEntityToProtoMessage(src dbv2.Entity, dst proto.Message) {
 						dstValues.Field(i).Set(reflect.ValueOf(m))
 					}
 				}
+			case reflect.Ptr:
+				fmt.Println("inside pointer")
+				switch dstValues.Type().Field(i).Type.String() {
+				case "*structpb.Struct":
+					//protobufStruct := structpb.Struct{}
+					//fields := make(map[string]*structpb.Value)
+					for k, v := range fValue.EntityValue.Properties {
+						fmt.Println(k)
+						//figure out a way to handle this
+						fmt.Println(v)
+					}
+				}
 			}
 		}
 	}
@@ -137,18 +149,19 @@ func toValue(fValue reflect.Value) (value dbv2.Value, err error) {
 					innerEntity[fmt.Sprint(value)] = dbv2.Value{BooleanValue: x.BoolValue}
 				} else if x, ok := v.GetKind().(*structpb.Value_NumberValue); ok {
 					//structpbStruct on supports float64
-					innerEntity[fmt.Sprint(value)] = dbv2.Value{DoubleValue: x.NumberValue}
+					innerEntity[fmt.Sprint(value)] = dbv2.Value{DoubleValue: float64(x.NumberValue)}
 				} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
 					err = errors.New("list is not supported yet")
 					// TODO  figure out this
 					// innerEntity[fmt.Sprint(key)] = dbv2.Value{ArrayValue: x.ListValue}
-				} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
-					innerEntity[fmt.Sprint(value)] = dbv2.Value{NullValue: string(x.NullValue)}
+				} else if _, ok := v.GetKind().(*structpb.Value_NullValue); ok {
+					innerEntity[fmt.Sprint(value)] = dbv2.Value{NullValue: ""}
 				}
 			}
 			value.EntityValue = &dbv2.Entity{Properties: innerEntity}
 		case "*timestamp.Timestamp":
 			fmt.Println("inside *timestamp.Timestamp")
+			err = errors.New("datatype[ptr] not supported")
 		}
 		//err = errors.New("datatype[ptr] not supported")
 	default:

@@ -3,6 +3,8 @@ package translator
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/stretchr/testify/assert"
@@ -50,6 +52,8 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			Fields: map[string]*structpb.Value{
 				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
 				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
+				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
+				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 			},
 		},
 	}
@@ -81,6 +85,8 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	//assert google.protobuf.Struct
 	assert.Equal(t, true, entity.Properties["StructKey"].EntityValue.Properties["struct-key-bool"].BooleanValue)
 	assert.Equal(t, "some random string in proto.Struct", entity.Properties["StructKey"].EntityValue.Properties["struct-key-string"].StringValue)
+	assert.Equal(t, float64(123456.12), entity.Properties["StructKey"].EntityValue.Properties["struct-key-number"].DoubleValue)
+	assert.Equal(t, "", entity.Properties["StructKey"].EntityValue.Properties["struct-key-null"].NullValue)
 }
 
 func TestDatastoreEntityToProtoMessage(t *testing.T) {
@@ -116,6 +122,16 @@ func TestDatastoreEntityToProtoMessage(t *testing.T) {
 			},
 		},
 	}
+	properties["StructKey"] = datastore.Value{
+		EntityValue: &datastore.Entity{
+			Properties: map[string]datastore.Value{
+				"struct-key-string": {StringValue: "apple inc"},
+				"struct-key-number": {IntegerValue: 20},
+				"struct-key-bool":   {BooleanValue: true},
+				"struct-key-null":   {NullValue: ""},
+			},
+		},
+	}
 
 	entity := datastore.Entity{
 		Properties: properties,
@@ -131,4 +147,6 @@ func TestDatastoreEntityToProtoMessage(t *testing.T) {
 	assert.Equal(t, map[string]string{"k1": "some-string-key-1", "k2": "some-string-key-2"}, dbModel.GetMapStringString())
 	//assert map[string]int32
 	assert.Equal(t, map[string]int32{"int-key-1": 10, "int-key-2": 20}, dbModel.GetMapStringInt32())
+	//assert google.protobuf.Struct
+	fmt.Println(dbModel.GetStructKey())
 }
