@@ -1,0 +1,17 @@
+coverage:
+  status:
+    # pull-requests only
+    patch:
+      default:
+        threshold: 5%
+  precision: 2
+  round: down
+  range: 70...100
+
+comment:
+  layout: "header, diff, tree"
+  behavior: default
+  require_changes: false
+  branches: null
+  flags: null
+  paths: null
