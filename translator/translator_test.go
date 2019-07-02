@@ -40,7 +40,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			1, 2, 3, 4, 5, 6,
 		},
 		EnumKey: example.ExampleEnumModel_ENUM1,
-		/*MapStringString: map[string]string{
+		MapStringString: map[string]string{
 			"string-key-1": "k1",
 			"string-key-2": "k2",
 		},
@@ -48,7 +48,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			"int-key-1": 1,
 			"int-key-2": 2,
 		},
-		StructKey: &structpb.Struct{
+		/*StructKey: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
 				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},

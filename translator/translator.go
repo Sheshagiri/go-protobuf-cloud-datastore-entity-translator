@@ -92,34 +92,21 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 			case reflect.Map:
 				entity := fValue.(*datastore.Entity)
 				fmt.Println(entity.Properties)
-				/*switch entityValue.Kind() {
-				// for now only entity is present inside a map
-				case reflect.TypeOf(&datastore.Entity{}).Kind():
-					if !entityValue.IsNil() {
-						properties := entityValue.Elem().FieldByName("Properties")
-						if !properties.IsNil() {
-							switch dstValues.Type().Field(i).Type.String() {
-							// rudimentary impl
-							case "map[string]string":
-								m := make(map[string]string)
-								for _, key := range properties.MapKeys() {
-									v := properties.MapIndex(key)
-									//fmt.Printf("key: %v, value: %v\n",key,v.FieldByName("StringValue"))
-									m[key.String()] = v.FieldByName("StringValue").String()
-								}
-								dstValues.Field(i).Set(reflect.ValueOf(m))
-							case "map[string]int32":
-								m := make(map[string]int32)
-								for _, key := range properties.MapKeys() {
-									v := properties.MapIndex(key)
-									//fmt.Printf("key: %v, value: %v\n", key, v.FieldByName("IntegerValue"))
-									m[key.String()] = int32(v.FieldByName("IntegerValue").Int())
-								}
-								dstValues.Field(i).Set(reflect.ValueOf(m))
-							}
-						}
+				switch dstValues.Type().Field(i).Type.String() {
+				// rudimentary impl
+				case "map[string]string":
+					m := make(map[string]string)
+					for _, property := range entity.Properties {
+						m[property.Name] = property.Value.(string)
 					}
-				}*/
+					dstValues.Field(i).Set(reflect.ValueOf(m))
+				case "map[string]int32":
+					m := make(map[string]int32)
+					for _, property := range entity.Properties {
+						m[property.Name] = int32(property.Value.(int64))
+					}
+					dstValues.Field(i).Set(reflect.ValueOf(m))
+				}
 			case reflect.Ptr:
 				fmt.Println("validate in struct type")
 				switch dstValues.Type().Field(i).Type.String() {
