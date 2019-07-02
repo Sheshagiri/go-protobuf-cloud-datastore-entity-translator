@@ -6,12 +6,10 @@ import (
 	"fmt"
 
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
-	//structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/stretchr/testify/assert"
-	dbv2 "google.golang.org/api/datastore/v1"
+	//dbv2 "google.golang.org/api/datastore/v1"
 	//datastore "cloud.google.com/go/datastore"
 	//"github.com/golang/protobuf/ptypes/struct"
-	"github.com/golang/protobuf/ptypes/struct"
 )
 
 func TestProtoMessageToDatastoreEntitySimple(t *testing.T) {
@@ -29,7 +27,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	srcProto := &example.ExampleDBModel{
 		StringKey: "some random string key for testing",
 		BoolKey:   true,
-		Int32Key:  32,
+		Int32Key:  int32(32),
 		Int64Key:  64,
 		FloatKey:  float32(10.14),
 		DoubleKey: float64(10.2121),
@@ -42,7 +40,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			1, 2, 3, 4, 5, 6,
 		},
 		EnumKey: example.ExampleEnumModel_ENUM1,
-		MapStringString: map[string]string{
+		/*MapStringString: map[string]string{
 			"string-key-1": "k1",
 			"string-key-2": "k2",
 		},
@@ -57,7 +55,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 			},
-		},
+		},*/
 	}
 	entity := ProtoMessageToDatastoreEntity(srcProto)
 	fmt.Println("++++")
@@ -91,6 +89,7 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	assert.Equal(t, "", entity.Properties["StructKey"].EntityValue.Properties["struct-key-null"].NullValue)*/
 }
 
+/*
 func TestDatastoreEntityToProtoMessage(t *testing.T) {
 	properties := make(map[string]dbv2.Value)
 	properties["StringKey"] = dbv2.Value{
@@ -151,19 +150,4 @@ func TestDatastoreEntityToProtoMessage(t *testing.T) {
 	assert.Equal(t, map[string]int32{"int-key-1": 10, "int-key-2": 20}, dbModel.GetMapStringInt32())
 	//assert google.protobuf.Struct
 	fmt.Println(dbModel.GetStructKey())
-}
-
-
-func TestGetKeysWithTypes(t *testing.T) {
-	dstProto := &example.ExampleDBModel{
-		StructKey:&structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
-				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
-				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
-				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
-			},
-		},
-	}
-	fmt.Println(GetKeysWithTypes(dstProto))
-}
+}*/
