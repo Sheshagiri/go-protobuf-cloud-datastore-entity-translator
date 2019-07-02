@@ -2,9 +2,17 @@
 
 
 [[projects]]
-  digest = "1:80004fcc5cf64e591486b3e11b406f1e0d17bf85d475d64203c8494f5da4fcd1"
+  digest = "1:74cf9e090ca4b63e9a111175c39b030fccb09a4210a69585ccc631279909b493"
   name = "cloud.google.com/go"
-  packages = ["compute/metadata"]
+  packages = [
+    "compute/metadata",
+    "datastore",
+    "datastore/internal/gaepb",
+    "internal",
+    "internal/fields",
+    "internal/trace",
+    "internal/version",
+  ]
   pruneopts = "UT"
   revision = "457ea5c15ccf3b87db582c450e80101989da35f7"
   version = "v0.40.0"
@@ -18,19 +26,29 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:57bf08b3ada129d5d845734e80096504898445ece891e87ce371d5d67a18a079"
+  digest = "1:499b09c6fecbec76e839ef9acf07af100219048ed22b3ca7d78948ae2767e781"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
+    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
     "ptypes/struct",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
   version = "v1.3.1"
+
+[[projects]]
+  digest = "1:766102087520f9d54f2acc72bd6637045900ac735b4a419b128d216f0c5c4876"
+  name = "github.com/googleapis/gax-go"
+  packages = ["v2"]
+  pruneopts = "UT"
+  revision = "bd5b16380fd03dc758d11cef74ba2e3bc8b0e8c2"
+  version = "v2.0.5"
 
 [[projects]]
   digest = "1:67474f760e9ac3799f740db2c489e6423a4cde45520673ec123ac831ad849cb8"
@@ -57,7 +75,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:74055050ea547bb04600be79cc501965cb3de8988018262f2ca430f0a0b48ec3"
+  digest = "1:bf33f7cd985e8e62eeef3b1985ec48f0f274e4083fa811596aafaf3af2947e83"
   name = "go.opencensus.io"
   packages = [
     ".",
@@ -65,6 +83,7 @@
     "internal/tagencoding",
     "metric/metricdata",
     "metric/metricproducer",
+    "plugin/ocgrpc",
     "plugin/ochttp",
     "plugin/ochttp/propagation/b3",
     "resource",
@@ -146,7 +165,7 @@
   version = "v0.3.2"
 
 [[projects]]
-  digest = "1:6c35c8e9d5a0d209dda6224fe0c9d0a05af7c19fb2b7041a858dfca2c68a032e"
+  digest = "1:26f740b2cee0a10ea1ac2bb72eb231b857e5b002c29a880a61976dd7ace863e3"
   name = "google.golang.org/api"
   packages = [
     "datastore/v1",
@@ -155,7 +174,10 @@
     "googleapi/internal/uritemplates",
     "googleapi/transport",
     "internal",
+    "iterator",
     "option",
+    "transport",
+    "transport/grpc",
     "transport/http",
     "transport/http/internal/propagation",
   ]
@@ -164,7 +186,7 @@
   version = "v0.7.0"
 
 [[projects]]
-  digest = "1:498b722d33dde4471e7d6e5d88a5e7132d2a8306fea5ff5ee82d1f418b4f41ed"
+  digest = "1:2c26b1c47556c0e5e73cdb05d8361c463737eee4baac35d38b40c728c3074a94"
   name = "google.golang.org/appengine"
   packages = [
     ".",
@@ -175,7 +197,9 @@
     "internal/log",
     "internal/modules",
     "internal/remote_api",
+    "internal/socket",
     "internal/urlfetch",
+    "socket",
     "urlfetch",
   ]
   pruneopts = "UT"
@@ -184,25 +208,42 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:583a0c80f5e3a9343d33aea4aead1e1afcc0043db66fdf961ddd1fe8cd3a4faf"
+  digest = "1:cb72b4a66da2a7340f86d2ba4bdc9fb078f6bfbb2ce802f573cc05f8fb1ea50b"
   name = "google.golang.org/genproto"
-  packages = ["googleapis/rpc/status"]
+  packages = [
+    "googleapis/api/annotations",
+    "googleapis/datastore/v1",
+    "googleapis/rpc/code",
+    "googleapis/rpc/status",
+    "googleapis/type/latlng",
+  ]
   pruneopts = "UT"
   revision = "eb59cef1c072c61ea4f7623910448d5e9c6a4455"
 
 [[projects]]
-  digest = "1:e8800ddadd6bce3bc0c5ffd7bc55dbdddc6e750956c10cc10271cade542fccbe"
+  digest = "1:9db2e6e9d0d0a6580f01a242d30e895efd65b57ed923f50ea37667a6c09665bd"
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
     "balancer/base",
+    "balancer/grpclb",
+    "balancer/grpclb/grpc_lb_v1",
     "balancer/roundrobin",
     "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
     "credentials",
+    "credentials/alts",
+    "credentials/alts/internal",
+    "credentials/alts/internal/authinfo",
+    "credentials/alts/internal/conn",
+    "credentials/alts/internal/handshaker",
+    "credentials/alts/internal/handshaker/service",
+    "credentials/alts/internal/proto/grpc_gcp",
+    "credentials/google",
     "credentials/internal",
+    "credentials/oauth",
     "encoding",
     "encoding/proto",
     "grpclog",
@@ -235,6 +276,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "cloud.google.com/go/datastore",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes/struct",
     "github.com/golang/protobuf/ptypes/timestamp",
