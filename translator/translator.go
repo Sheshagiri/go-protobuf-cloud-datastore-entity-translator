@@ -8,12 +8,11 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"time"
 )
-
-func validate(entity datastore.Entity) {
-	fmt.Println(entity)
-}
 
 func GetProperty(properties []datastore.Property, name string) interface{} {
 	for _, property := range properties {
@@ -33,9 +32,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message) datastore.Entity {
 	for i := 0; i < srcValues.NumField(); i++ {
 		fName := srcValues.Type().Field(i).Name
 		if !strings.ContainsAny(fName, "XXX_") {
-			//fType := srcValues.Field(i).Type().Kind().String()
 			value, err := toValue(srcValues.Field(i))
-			// fmt.Printf("name:%s, type:%v, value:%v\n",name,fType,value)
 			if err == nil {
 				properties = append(properties, datastore.Property{
 					Name:  fName,
@@ -50,7 +47,8 @@ func ProtoMessageToDatastoreEntity(src proto.Message) datastore.Entity {
 	return entity
 }
 
-func DEtoPM(src datastore.Entity, dst proto.Message) {
+// DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
+func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) {
 	dstValues := reflect.ValueOf(dst).Elem()
 	for i := 0; i < dstValues.NumField(); i++ {
 		fName := dstValues.Type().Field(i).Name
@@ -106,8 +104,12 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 				}
 			case reflect.Ptr:
 				switch dstValues.Type().Field(i).Type.String() {
+				case "*timestamp.Timestamp":
+					if t, ok := fValue.(time.Time); ok {
+						ts, _ := ptypes.TimestampProto(t)
+						dstValues.Field(i).Set(reflect.ValueOf(ts))
+					}
 				case "*structpb.Struct":
-					//fmt.Println("inside *structpb.Struct")
 					entityValue := fValue.(*datastore.Entity)
 					m := make(map[string]*structpb.Value)
 					for _, property := range entityValue.Properties {
@@ -156,7 +158,7 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 	case reflect.Float64:
 		value = fValue.Float()
 	case reflect.Slice:
-		//TODO add complex type to the slicell
+		//TODO add complex type to the slice
 		if fValue.Type().Elem().Kind() == reflect.Uint8 {
 			//BlobValue is a string in the datastore entity proto
 			value = string(fValue.Bytes())
@@ -188,7 +190,7 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 	case reflect.Ptr:
 		switch fValue.Type().String() {
 		case "*structpb.Struct":
-			fmt.Println("inside *structpb.Struct")
+			// fmt.Println("inside *structpb.Struct")
 			if !fValue.IsNil() {
 				fields := fValue.Elem().FieldByName("Fields")
 				innerEntity := make([]datastore.Property, 0)
@@ -228,8 +230,10 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 				value = &datastore.Entity{Properties: innerEntity}
 			}
 		case "*timestamp.Timestamp":
-			fmt.Println("inside *timestamp.Timestamp")
-			err = errors.New("datatype[ptr] not supported")
+			if !fValue.IsNil() {
+				ts := fValue.Interface().(*timestamp.Timestamp)
+				value = time.Unix(ts.Seconds, int64(ts.Nanos))
+			}
 		case "*datastore.Entity":
 			fmt.Println("inside *datastore.Entity")
 			err = errors.New("datatype[ptr] not supported")
