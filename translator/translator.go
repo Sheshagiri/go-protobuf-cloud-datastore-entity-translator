@@ -73,14 +73,11 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 			case reflect.Int32, reflect.Int64:
 				dstValues.Field(i).SetInt(reflect.ValueOf(fValue).FieldByName("IntegerValue").Int())
 			case reflect.Slice:
-				fmt.Println("inside slice")
-				fmt.Println(dstValues.Type().Field(i).Type)
 				if dstValues.Type().Field(i).Type.Elem().Kind() == reflect.Uint8 {
 					v := reflect.ValueOf(fValue).FieldByName("BlobValue").String()
 					dstValues.Field(i).SetBytes([]byte(v))
 				} else {
 					// get elements from ArrayValue
-					fmt.Println("inside array values")
 					arrayValue := reflect.ValueOf(fValue).FieldByName("ArrayValue")
 					if !arrayValue.IsNil() {
 						values := arrayValue.Elem().FieldByName("Values")
@@ -104,24 +101,12 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 						}
 					}
 				}
-
-				/*switch dstValues.Type().Field(i).Type.String() {
-				case "[]uint8":
-					//unfortunately bytes are stored as string :(
-					v := reflect.ValueOf(fValue).FieldByName("BlobValue").String()
-					dstValues.Field(i).SetBytes([]byte(v))
-				default:
-					fmt.Println("its a slice that is not supported")
-				}*/
-				//dstValues.Field(i).SetBytes(reflect.ValueOf(fValue).FieldByName("BlobValue").Bytes())
 			case reflect.Map:
 				entityValue := reflect.ValueOf(fValue).FieldByName("EntityValue")
 				switch entityValue.Kind() {
 				// for now only entity is present inside a map
 				case reflect.TypeOf(&datastore.Entity{}).Kind():
-					fmt.Println("inside *datastore.Entity")
 					if !entityValue.IsNil() {
-						fmt.Println("struct is not nil")
 						properties := entityValue.Elem().FieldByName("Properties")
 						if !properties.IsNil() {
 							switch dstValues.Type().Field(i).Type.String() {
@@ -138,11 +123,50 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 								m := make(map[string]int32)
 								for _, key := range properties.MapKeys() {
 									v := properties.MapIndex(key)
-									fmt.Printf("key: %v, value: %v\n", key, v.FieldByName("IntegerValue"))
+									//fmt.Printf("key: %v, value: %v\n", key, v.FieldByName("IntegerValue"))
 									m[key.String()] = int32(v.FieldByName("IntegerValue").Int())
 								}
 								dstValues.Field(i).Set(reflect.ValueOf(m))
 							}
+						}
+					}
+				}
+			case reflect.Ptr:
+				fmt.Println("validate in struct type")
+				switch dstValues.Type().Field(i).Type.String() {
+				case "*structpb.Struct":
+					entityValue := reflect.ValueOf(fValue).FieldByName("EntityValue")
+					switch entityValue.Kind() {
+					// for now only entity is present inside a map
+					case reflect.TypeOf(&datastore.Entity{}).Kind():
+						if !entityValue.IsNil() {
+							properties := entityValue.Elem().FieldByName("Properties")
+							fmt.Println(properties)
+							//m := make(map [string]*structpb.Value)
+							fieldTypes := GetKeysWithTypes(dst)
+							fmt.Println(fieldTypes)
+							//fields := dstValues.Field(i).Elem().FieldByName("Fields")
+							/*for _, key := range  fields.MapKeys() {
+								v := fields.MapIndex(key)
+								fieldTypes[key.String()] = strings.Split(fmt.Sprint(v),":")[0]
+								fmt.Printf("name: %s. type:%s\n", key.String(),v)
+							}
+
+							for _, key := range properties.MapKeys(){
+								v := reflect.ValueOf(properties.MapIndex(key))
+								switch v.Kind() {
+								case reflect.Struct:
+									t := v.Type()
+									size := v.NumField()
+									fmt.Println("----------------")
+									for i := 0; i < size; i++ {
+										name := t.Field(i).Name
+										fmt.Println(name)
+									}
+									fmt.Printf("type: %v, size: %v\n",t, size)
+									fmt.Println("----------------")
+								}
+							}*/
 						}
 					}
 				}
@@ -285,4 +309,23 @@ func toValue(fValue reflect.Value) (value dbv2.Value, err error) {
 		fmt.Println("inside default case")
 	}
 	return value, err
+}
+
+func GetKeysWithTypes(src proto.Message) map[string]string{
+	keysWithTypes := make(map[string]string)
+	v := reflect.ValueOf(src).Elem()
+	for j := 0; j < v.NumField(); j++ {
+		f := v.Field(j)
+		n := v.Type().Field(j).Name
+		if !strings.ContainsAny(n,"XXX_"){
+			if n == "StructKey" {
+				fields := f.Elem().FieldByName("Fields")
+				for _, key := range  fields.MapKeys() {
+					v := fields.MapIndex(key)
+					keysWithTypes[key.String()] = strings.Split(fmt.Sprint(v),":")[0]
+				}
+			}
+		}
+	}
+	return keysWithTypes
 }

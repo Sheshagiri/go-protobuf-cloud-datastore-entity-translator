@@ -152,3 +152,18 @@ func TestDatastoreEntityToProtoMessage(t *testing.T) {
 	//assert google.protobuf.Struct
 	fmt.Println(dbModel.GetStructKey())
 }
+
+
+func TestGetKeysWithTypes(t *testing.T) {
+	dstProto := &example.ExampleDBModel{
+		StructKey:&structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
+				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
+				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
+			},
+		},
+	}
+	fmt.Println(GetKeysWithTypes(dstProto))
+}
