@@ -8,8 +8,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/golang/protobuf/proto"
-	structpb "github.com/golang/protobuf/ptypes/struct"
-	//dbv2 "google.golang.org/api/datastore/v1"
+	"github.com/golang/protobuf/ptypes/struct"
 )
 
 func validate(entity datastore.Entity) {
@@ -71,7 +70,6 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 				} else {
 					// get elements from ArrayValue
 					arrayValues := fValue.([]interface{})
-					fmt.Println(arrayValues)
 					switch dstValues.Type().Field(i).Type.Elem().Kind() {
 					case reflect.String:
 						array := make([]string, len(arrayValues))
@@ -91,7 +89,6 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 				}
 			case reflect.Map:
 				entity := fValue.(*datastore.Entity)
-				fmt.Println(entity.Properties)
 				switch dstValues.Type().Field(i).Type.String() {
 				// rudimentary impl
 				case "map[string]string":
@@ -108,38 +105,36 @@ func DEtoPM(src datastore.Entity, dst proto.Message) {
 					dstValues.Field(i).Set(reflect.ValueOf(m))
 				}
 			case reflect.Ptr:
-				fmt.Println("validate in struct type")
 				switch dstValues.Type().Field(i).Type.String() {
 				case "*structpb.Struct":
-					fmt.Println("inside *structpb.Struct")
-					//entityValue := fValue.(*datastore.Entity)
-					//fmt.Println(entityValue)
-					/*entityValue := reflect.ValueOf(fValue).FieldByName("EntityValue")
-					switch entityValue.Kind() {
-					// for now only entity is present inside a map
-					case reflect.TypeOf(&datastore.Entity{}).Kind():
-						if !entityValue.IsNil() {
-							properties := entityValue.Elem().FieldByName("Properties")
-							fmt.Println(properties)
-							//m := make(map [string]*structpb.Value)
-
-							for _, key := range properties.MapKeys(){
-								v := reflect.ValueOf(properties.MapIndex(key))
-								switch v.Kind() {
-								case reflect.Struct:
-									t := v.Type()
-									size := v.NumField()
-									fmt.Println("----------------")
-									for i := 0; i < size; i++ {
-										name := t.Field(i).Name
-										fmt.Println(name)
-									}
-									fmt.Printf("type: %v, size: %v\n",t, size)
-									fmt.Println("----------------")
-								}
+					//fmt.Println("inside *structpb.Struct")
+					entityValue := fValue.(*datastore.Entity)
+					m := make(map[string]*structpb.Value)
+					for _, property := range entityValue.Properties {
+						v := reflect.ValueOf(property.Value).Kind()
+						switch v {
+						case reflect.String:
+							m[property.Name] = &structpb.Value{
+								Kind: &structpb.Value_StringValue{property.Value.(string)},
+							}
+						case reflect.Bool:
+							m[property.Name] = &structpb.Value{
+								Kind: &structpb.Value_BoolValue{property.Value.(bool)},
+							}
+						case reflect.Float64:
+							m[property.Name] = &structpb.Value{
+								Kind: &structpb.Value_NumberValue{property.Value.(float64)},
+							}
+						case reflect.Int32:
+							m[property.Name] = &structpb.Value{
+								Kind: &structpb.Value_NullValue{},
 							}
 						}
-					}*/
+					}
+					s := &structpb.Struct{
+						Fields: m,
+					}
+					dstValues.Field(i).Set(reflect.ValueOf(s))
 				}
 			default:
 				fmt.Println("doesn't support yet")

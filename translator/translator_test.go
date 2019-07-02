@@ -3,13 +3,9 @@ package translator
 import (
 	"testing"
 
-	"fmt"
-
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/stretchr/testify/assert"
-	//dbv2 "google.golang.org/api/datastore/v1"
-	//datastore "cloud.google.com/go/datastore"
-	//"github.com/golang/protobuf/ptypes/struct"
 )
 
 func TestProtoMessageToDatastoreEntitySimple(t *testing.T) {
@@ -48,19 +44,16 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			"int-key-1": 1,
 			"int-key-2": 2,
 		},
-		/*StructKey: &structpb.Struct{
+		StructKey: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
 				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
 				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 			},
-		},*/
+		},
 	}
 	entity := ProtoMessageToDatastoreEntity(srcProto)
-	fmt.Println("++++")
-	fmt.Println(entity)
-	fmt.Println("++++")
 	dstProto := &example.ExampleDBModel{}
 
 	DEtoPM(entity, dstProto)
@@ -77,16 +70,15 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 	//assert int32 array
 	assert.Equal(t, srcProto.Int32ArrayKey, dstProto.Int32ArrayKey)
 	// enums are converted to int's in datastore
-	//assert.Equal(t, int64(1), GetProperty(entity.Properties, "EnumKey").Value)
+	assert.Equal(t, srcProto.GetEnumKey(), dstProto.GetEnumKey())
 	//assert map[string]string
 	assert.Equal(t, srcProto.GetMapStringString(), dstProto.GetMapStringString())
-	//assert.Equal(t, int64(1), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-1"].Value)
-	//assert.Equal(t, int64(2), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-2"].Value)
+	assert.Equal(t, srcProto.GetMapStringInt32(), dstProto.GetMapStringInt32())
+
 	//assert google.protobuf.Struct
-	/*assert.Equal(t, true, entity.Properties["StructKey"].EntityValue.Properties["struct-key-bool"].BooleanValue)
-	assert.Equal(t, "some random string in proto.Struct", entity.Properties["StructKey"].EntityValue.Properties["struct-key-string"].StringValue)
-	assert.Equal(t, float64(123456.12), entity.Properties["StructKey"].EntityValue.Properties["struct-key-number"].Value)
-	assert.Equal(t, "", entity.Properties["StructKey"].EntityValue.Properties["struct-key-null"].NullValue)*/
+	assert.Equal(t, srcProto.GetStructKey(), dstProto.GetStructKey())
+	//extra check to see if they are really equal
+	assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
 }
 
 /*
