@@ -3,6 +3,7 @@ package translator
 import (
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -24,38 +25,37 @@ func GetProperty(properties []datastore.Property, name string) interface{} {
 }
 
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
-func ProtoMessageToDatastoreEntity(src proto.Message) datastore.Entity {
+func ProtoMessageToDatastoreEntity(src proto.Message) (entity datastore.Entity, err error) {
 	srcValues := reflect.ValueOf(src).Elem()
-	entity := datastore.Entity{}
 	properties := make([]datastore.Property, 0)
 
 	for i := 0; i < srcValues.NumField(); i++ {
 		fName := srcValues.Type().Field(i).Name
 		if !strings.ContainsAny(fName, "XXX_") {
-			value, err := toValue(srcValues.Field(i))
-			if err == nil {
+			var value interface{}
+			if value, err = toValue(srcValues.Field(i)); err != nil {
+				return
+			} else {
 				properties = append(properties, datastore.Property{
 					Name:  fName,
 					Value: value,
 				})
-			} else {
-				fmt.Printf("field: %s, err: %v\n", fName, err)
 			}
 		}
 	}
 	entity.Properties = properties
-	return entity
+	return
 }
 
 // DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
-func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) {
+func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) (err error) {
 	dstValues := reflect.ValueOf(dst).Elem()
 	for i := 0; i < dstValues.NumField(); i++ {
 		fName := dstValues.Type().Field(i).Name
 		if !strings.Contains(fName, "XXX_") {
 			fValue := GetProperty(src.Properties, fName)
 			fType := dstValues.Type().Field(i).Type.Kind()
-			fmt.Printf("name: %s, type: %s\n", fName, fType)
+			log.Printf("name: %s, type: %s\n", fName, fType)
 			switch fType {
 			case reflect.Float64, reflect.Float32, reflect.Bool, reflect.String:
 				dstValues.Field(i).Set(reflect.ValueOf(fValue))
@@ -101,6 +101,10 @@ func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) {
 						m[property.Name] = int32(property.Value.(int64))
 					}
 					dstValues.Field(i).Set(reflect.ValueOf(m))
+				case "map[string]*structpb.Value":
+					errString := "map[string]*structpb.Value is not supported yet"
+					log.Println(errString)
+					err = errors.New(errString)
 				}
 			case reflect.Ptr:
 				switch dstValues.Type().Field(i).Type.String() {
@@ -139,10 +143,12 @@ func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) {
 					dstValues.Field(i).Set(reflect.ValueOf(s))
 				}
 			default:
-				fmt.Println("doesn't support yet")
+				errString := fmt.Sprintf("datatype[%s] not supported", fType)
+				err = errors.New(errString)
 			}
 		}
 	}
+	return
 }
 
 func toValue(fValue reflect.Value) (value interface{}, err error) {
@@ -190,7 +196,7 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 	case reflect.Ptr:
 		switch fValue.Type().String() {
 		case "*structpb.Struct":
-			// fmt.Println("inside *structpb.Struct")
+			//log.Println("inside *structpb.Struct")
 			if !fValue.IsNil() {
 				fields := fValue.Elem().FieldByName("Fields")
 				innerEntity := make([]datastore.Property, 0)
@@ -213,13 +219,13 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 							Name:  fmt.Sprint(value),
 							Value: x.NumberValue,
 						})
-					} else if x, ok := v.GetKind().(*structpb.Value_ListValue); ok {
+					} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
 						err = errors.New("list is not supported yet")
 						// TODO  figure out this
-						innerEntity = append(innerEntity, datastore.Property{
+						/*innerEntity = append(innerEntity, datastore.Property{
 							Name:  fmt.Sprint(value),
 							Value: x.ListValue,
-						})
+						})*/
 					} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
 						innerEntity = append(innerEntity, datastore.Property{
 							Name:  fmt.Sprint(value),
@@ -234,69 +240,15 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 				ts := fValue.Interface().(*timestamp.Timestamp)
 				value = time.Unix(ts.Seconds, int64(ts.Nanos))
 			}
-		case "*datastore.Entity":
-			fmt.Println("inside *datastore.Entity")
-			err = errors.New("datatype[ptr] not supported")
+		default:
+			errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
+			log.Println(errString)
+			err = errors.New(errString)
 		}
-		//err = errors.New("datatype[ptr] not supported")
 	default:
-		fmt.Println("inside default case")
+		errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
+		log.Println(errString)
+		err = errors.New(errString)
 	}
 	return value, err
 }
-
-/*
-func DatastoreEntityToProtoMessage(src dbv2.Entity, dst proto.Message) {
-	dstValues := reflect.ValueOf(dst).Elem()
-	for i := 0; i < dstValues.NumField(); i++ {
-		fName := dstValues.Type().Field(i).Name
-		if !strings.Contains(fName, "XXX_") {
-			fValue := getProperty(src.Properties, fName)
-			fType := dstValues.Type().Field(i).Type.Kind()
-			fmt.Printf("name: %s, type: %s\n", fName, fType)
-			switch fType {
-			case reflect.String:
-				dstValues.Field(i).SetString(fValue.StringValue)
-			case reflect.Bool:
-				dstValues.Field(i).SetBool(fValue.BooleanValue)
-			case reflect.Int32, reflect.Int64:
-				dstValues.Field(i).SetInt(fValue.IntegerValue)
-			case reflect.Float32, reflect.Float64:
-				dstValues.Field(i).SetFloat(fValue.DoubleValue)
-			case reflect.Map:
-				entity := fValue.EntityValue
-				if entity != nil {
-					switch dstValues.Type().Field(i).Type.String() {
-					// rudimentary impl
-					case "map[string]string":
-						m := make(map[string]string)
-						for k, v := range entity.Properties {
-							m[fmt.Sprint(k)] = v.StringValue
-						}
-						dstValues.Field(i).Set(reflect.ValueOf(m))
-					case "map[string]int32":
-						m := make(map[string]int32)
-						for k, v := range entity.Properties {
-							m[fmt.Sprint(k)] = int32(v.IntegerValue)
-						}
-						dstValues.Field(i).Set(reflect.ValueOf(m))
-					}
-				}
-			case reflect.Ptr:
-				fmt.Println("inside pointer")
-				switch dstValues.Type().Field(i).Type.String() {
-				case "*structpb.Struct":
-					//protobufStruct := structpb.Struct{}
-					//fields := make(map[string]*structpb.Value)
-					fmt.Println(fValue.EntityValue)
-					for k, v := range fValue.EntityValue.Properties {
-						fmt.Println(k)
-						//figure out a way to handle this
-						fmt.Println(v)
-					}
-				}
-			}
-		}
-	}
-}
-*/

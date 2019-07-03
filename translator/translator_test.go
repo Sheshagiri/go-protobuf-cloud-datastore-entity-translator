@@ -3,26 +3,44 @@ package translator
 import (
 	"testing"
 
+	"cloud.google.com/go/datastore"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/stretchr/testify/assert"
 	"log"
-	//"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes"
 )
 
-func TestProtoMessageToDatastoreEntitySimple(t *testing.T) {
+func TestGetProperty(t *testing.T) {
+	properties := []datastore.Property{
+		{
+			Name:  "google",
+			Value: "search engine",
+		},
+	}
+	assert.Equal(t, "search engine", GetProperty(properties, "google").(string))
+	assert.Nil(t, GetProperty(properties, "apple"))
+}
+
+func TestNestedModel(t *testing.T) {
 	srcProto := &example.ExampleNestedModel{
 		StringKey: "some random string",
 		Int32Key:  22,
 	}
-	entity := ProtoMessageToDatastoreEntity(srcProto)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto)
+	// make sure there is no error
+	assert.NoError(t, err)
+
 	dstProto := &example.ExampleNestedModel{}
-	DatastoreEntityToProtoMessage(entity, dstProto)
+	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	// make sure there is no error
+	assert.NoError(t, err)
+
 	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
 }
 
-func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
+func TestFullyPopulatedModel(t *testing.T) {
 	srcProto := &example.ExampleDBModel{
 		StringKey: "some random string key for testing",
 		BoolKey:   true,
@@ -57,11 +75,17 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 		},
 		TimestampKey: ptypes.TimestampNow(),
 	}
-	entity := ProtoMessageToDatastoreEntity(srcProto)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto)
+
+	// make sure there is no error
+	assert.NoError(t, err)
 	log.Println(entity)
 	dstProto := &example.ExampleDBModel{}
 
-	DatastoreEntityToProtoMessage(entity, dstProto)
+	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	// make sure there is no error
+	assert.NoError(t, err)
+
 	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
 	assert.Equal(t, srcProto.GetBoolKey(), dstProto.GetBoolKey())
 	assert.Equal(t, srcProto.GetInt32Key(), dstProto.GetInt32Key())
@@ -87,4 +111,38 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 
 	//assert google.protobuf.timestamp
 	assert.Equal(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
+}
+
+func TestPartialModel(t *testing.T) {
+	partialProto := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+			"struct-key-list":   {Kind: &structpb.Value_ListValue{}},
+		},
+	}
+	entity, err := ProtoMessageToDatastoreEntity(partialProto)
+	assert.NoError(t, err, err)
+	log.Println(entity)
+	dstProto := &structpb.Struct{}
+	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	assert.Error(t, err)
+}
+
+func TestUnSupportedTypes(t *testing.T) {
+	srcProto := &unsupported.Model{
+		Uint32Key: uint32(10),
+	}
+	_, err := ProtoMessageToDatastoreEntity(srcProto)
+	assert.EqualError(t, err, "datatype[uint32] not supported")
+
+	entity := datastore.Entity{
+		Properties: []datastore.Property{
+			{
+				Name:  "uint32",
+				Value: uint32(10),
+			},
+		},
+	}
+	err = DatastoreEntityToProtoMessage(entity, srcProto)
+	assert.EqualError(t, err, "datatype[uint32] not supported")
 }
