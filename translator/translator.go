@@ -68,6 +68,7 @@ func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) (err
 				} else {
 					// get elements from ArrayValue
 					arrayValues := fValue.([]interface{})
+					// TODO use type to dynamically make an array and make use of toValue function
 					switch dstValues.Type().Field(i).Type.Elem().Kind() {
 					case reflect.String:
 						array := make([]string, len(arrayValues))
@@ -88,7 +89,7 @@ func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) (err
 			case reflect.Map:
 				entity := fValue.(*datastore.Entity)
 				switch dstValues.Type().Field(i).Type.String() {
-				// rudimentary impl
+				// rudimentary impl, as I can't get hold of the type with Kind() here, look at Indirect() later
 				case "map[string]string":
 					m := make(map[string]string)
 					for _, property := range entity.Properties {
@@ -195,6 +196,7 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 		}
 	case reflect.Ptr:
 		switch fValue.Type().String() {
+		// I can't get hold of the type with Kind() here, look at Indirect() later
 		case "*structpb.Struct":
 			//log.Println("inside *structpb.Struct")
 			if !fValue.IsNil() {
@@ -220,12 +222,8 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 							Value: x.NumberValue,
 						})
 					} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
-						err = errors.New("list is not supported yet")
+						err = errors.New("list inside a google.protobuf.Struct is not supported yet")
 						// TODO  figure out this
-						/*innerEntity = append(innerEntity, datastore.Property{
-							Name:  fmt.Sprint(value),
-							Value: x.ListValue,
-						})*/
 					} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
 						innerEntity = append(innerEntity, datastore.Property{
 							Name:  fmt.Sprint(value),
@@ -238,7 +236,7 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 		case "*timestamp.Timestamp":
 			if !fValue.IsNil() {
 				ts := fValue.Interface().(*timestamp.Timestamp)
-				value = time.Unix(ts.Seconds, int64(ts.Nanos))
+				value, _ = ptypes.Timestamp(ts)
 			}
 		default:
 			errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
