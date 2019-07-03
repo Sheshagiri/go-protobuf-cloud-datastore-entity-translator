@@ -28,12 +28,12 @@ func TestNestedModel(t *testing.T) {
 		StringKey: "some random string",
 		Int32Key:  22,
 	}
-	entity, err := ProtoMessageToDatastoreEntity(srcProto)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	// make sure there is no error
 	assert.NoError(t, err)
-
+	log.Println(entity)
 	dstProto := &example.ExampleNestedModel{}
-	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
 	// make sure there is no error
 	assert.NoError(t, err)
 
@@ -75,14 +75,14 @@ func TestFullyPopulatedModel(t *testing.T) {
 		},
 		TimestampKey: ptypes.TimestampNow(),
 	}
-	entity, err := ProtoMessageToDatastoreEntity(srcProto)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 
 	// make sure there is no error
 	assert.NoError(t, err)
 	log.Println(entity)
 	dstProto := &example.ExampleDBModel{}
 
-	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
 	// make sure there is no error
 	assert.NoError(t, err)
 
@@ -120,11 +120,11 @@ func TestPartialModel(t *testing.T) {
 			"struct-key-list":   {Kind: &structpb.Value_ListValue{}},
 		},
 	}
-	entity, err := ProtoMessageToDatastoreEntity(partialProto)
+	entity, err := ProtoMessageToDatastoreEntity(partialProto, true)
 	assert.NoError(t, err, err)
 	log.Println(entity)
 	dstProto := &structpb.Struct{}
-	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
 	assert.Error(t, err)
 }
 
@@ -132,7 +132,7 @@ func TestUnSupportedTypes(t *testing.T) {
 	srcProto := &unsupported.Model{
 		Uint32Key: uint32(10),
 	}
-	_, err := ProtoMessageToDatastoreEntity(srcProto)
+	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
 	assert.EqualError(t, err, "datatype[uint32] not supported")
 
 	entity := datastore.Entity{
@@ -143,6 +143,6 @@ func TestUnSupportedTypes(t *testing.T) {
 			},
 		},
 	}
-	err = DatastoreEntityToProtoMessage(entity, srcProto)
+	err = DatastoreEntityToProtoMessage(entity, srcProto, false)
 	assert.EqualError(t, err, "datatype[uint32] not supported")
 }
