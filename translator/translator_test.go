@@ -31,7 +31,6 @@ func TestNestedModel(t *testing.T) {
 	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	// make sure there is no error
 	assert.NoError(t, err)
-	log.Println(entity)
 	dstProto := &example.ExampleNestedModel{}
 	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
 	// make sure there is no error
