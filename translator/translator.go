@@ -12,6 +12,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"regexp"
 	"time"
 )
 
@@ -25,7 +26,7 @@ func GetProperty(properties []datastore.Property, name string) interface{} {
 }
 
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
-func ProtoMessageToDatastoreEntity(src proto.Message) (entity datastore.Entity, err error) {
+func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity datastore.Entity, err error) {
 	srcValues := reflect.ValueOf(src).Elem()
 	properties := make([]datastore.Property, 0)
 
@@ -36,6 +37,9 @@ func ProtoMessageToDatastoreEntity(src proto.Message) (entity datastore.Entity, 
 			if value, err = toValue(srcValues.Field(i)); err != nil {
 				return
 			} else {
+				if snakeCase {
+					fName = toSnakeCase(fName)
+				}
 				properties = append(properties, datastore.Property{
 					Name:  fName,
 					Value: value,
@@ -48,12 +52,16 @@ func ProtoMessageToDatastoreEntity(src proto.Message) (entity datastore.Entity, 
 }
 
 // DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
-func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message) (err error) {
+func DatastoreEntityToProtoMessage(src datastore.Entity, dst proto.Message, snakeCase bool) (err error) {
 	dstValues := reflect.ValueOf(dst).Elem()
 	for i := 0; i < dstValues.NumField(); i++ {
 		fName := dstValues.Type().Field(i).Name
 		if !strings.Contains(fName, "XXX_") {
-			fValue := GetProperty(src.Properties, fName)
+			keyName := fName
+			if snakeCase {
+				keyName = toSnakeCase(fName)
+			}
+			fValue := GetProperty(src.Properties, keyName)
 			fType := dstValues.Type().Field(i).Type.Kind()
 			log.Printf("name: %s, type: %s\n", fName, fType)
 			switch fType {
@@ -249,4 +257,12 @@ func toValue(fValue reflect.Value) (value interface{}, err error) {
 		err = errors.New(errString)
 	}
 	return value, err
+}
+
+func toSnakeCase(name string) string {
+	var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+	var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+	snake := matchFirstCap.ReplaceAllString(name, "${1}_${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+	return strings.ToLower(snake)
 }
