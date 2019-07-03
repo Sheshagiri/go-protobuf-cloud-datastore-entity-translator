@@ -1,31 +1,52 @@
 package translator
 
 import (
-	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/api/datastore/v1"
 	"testing"
+
+	"cloud.google.com/go/datastore"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/struct"
+	"github.com/stretchr/testify/assert"
+	"log"
 )
 
-func TestProtoMessageToDatastoreEntitySimple(t *testing.T) {
-	example := &example.ExampleNestedModel{
+func TestGetProperty(t *testing.T) {
+	properties := []datastore.Property{
+		{
+			Name:  "google",
+			Value: "search engine",
+		},
+	}
+	assert.Equal(t, "search engine", GetProperty(properties, "google").(string))
+	assert.Nil(t, GetProperty(properties, "apple"))
+}
+
+func TestNestedModel(t *testing.T) {
+	srcProto := &example.ExampleNestedModel{
 		StringKey: "some random string",
 		Int32Key:  22,
 	}
-	entity := ProtoMessageToDatastoreEntity(example)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto)
+	// make sure there is no error
+	assert.NoError(t, err)
 
-	assert.Equal(t, "some random string", entity.Properties["StringKey"].StringValue)
-	assert.Equal(t, 22, int(entity.Properties["Int32Key"].IntegerValue))
+	dstProto := &example.ExampleNestedModel{}
+	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	// make sure there is no error
+	assert.NoError(t, err)
+
+	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
 }
 
-func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
-	float32 := float32(10.1)
-	e1 := &example.ExampleDBModel{
+func TestFullyPopulatedModel(t *testing.T) {
+	srcProto := &example.ExampleDBModel{
 		StringKey: "some random string key for testing",
 		BoolKey:   true,
-		Int32Key:  32,
+		Int32Key:  int32(32),
 		Int64Key:  64,
-		FloatKey:  float32,
+		FloatKey:  float32(10.14),
 		DoubleKey: float64(10.2121),
 		BytesKey:  []byte("this is a byte array"),
 		StringArrayKey: []string{
@@ -44,88 +65,84 @@ func TestProtoMessageToDatastoreEntityComplex(t *testing.T) {
 			"int-key-1": 1,
 			"int-key-2": 2,
 		},
+		StructKey: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
+				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
+				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
+			},
+		},
+		TimestampKey: ptypes.TimestampNow(),
 	}
-	entity := ProtoMessageToDatastoreEntity(e1)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto)
 
-	assert.Equal(t, "some random string key for testing", entity.Properties["StringKey"].StringValue)
-	assert.Equal(t, true, entity.Properties["BoolKey"].BooleanValue)
-	assert.Equal(t, int64(32), entity.Properties["Int32Key"].IntegerValue)
-	assert.Equal(t, int64(64), entity.Properties["Int64Key"].IntegerValue)
-	assert.Equal(t, float64(float32), entity.Properties["FloatKey"].DoubleValue)
-	assert.Equal(t, float64(10.2121), entity.Properties["DoubleKey"].DoubleValue)
+	// make sure there is no error
+	assert.NoError(t, err)
+	log.Println(entity)
+	dstProto := &example.ExampleDBModel{}
+
+	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	// make sure there is no error
+	assert.NoError(t, err)
+
+	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
+	assert.Equal(t, srcProto.GetBoolKey(), dstProto.GetBoolKey())
+	assert.Equal(t, srcProto.GetInt32Key(), dstProto.GetInt32Key())
+	assert.Equal(t, srcProto.GetInt64Key(), dstProto.GetInt64Key())
+	assert.Equal(t, srcProto.GetFloatKey(), dstProto.GetFloatKey())
+	assert.Equal(t, srcProto.GetDoubleKey(), dstProto.GetDoubleKey())
 	//TODO BlobValue returns a string
-	assert.Equal(t, string([]byte("this is a byte array")), entity.Properties["BytesKey"].BlobValue)
+	assert.Equal(t, srcProto.GetBytesKey(), dstProto.GetBytesKey())
 	//assert string array
-	assert.Equal(t, "element-1", entity.Properties["StringArrayKey"].ArrayValue.Values[0].StringValue)
-	assert.Equal(t, "element-2", entity.Properties["StringArrayKey"].ArrayValue.Values[1].StringValue)
+	assert.Equal(t, srcProto.GetStringArrayKey(), dstProto.GetStringArrayKey())
 	//assert int32 array
-	assert.Equal(t, int64(1), entity.Properties["Int32ArrayKey"].ArrayValue.Values[0].IntegerValue)
-	assert.Equal(t, int64(3), entity.Properties["Int32ArrayKey"].ArrayValue.Values[2].IntegerValue)
-	assert.Equal(t, int64(5), entity.Properties["Int32ArrayKey"].ArrayValue.Values[4].IntegerValue)
-	assert.Equal(t, int64(6), entity.Properties["Int32ArrayKey"].ArrayValue.Values[5].IntegerValue)
+	assert.Equal(t, srcProto.Int32ArrayKey, dstProto.Int32ArrayKey)
 	// enums are converted to int's in datastore
-	assert.Equal(t, int64(1), entity.Properties["EnumKey"].IntegerValue)
+	assert.Equal(t, srcProto.GetEnumKey(), dstProto.GetEnumKey())
 	//assert map[string]string
-	assert.Equal(t, "k1", entity.Properties["MapStringString"].EntityValue.Properties["string-key-1"].StringValue)
-	assert.Equal(t, "k2", entity.Properties["MapStringString"].EntityValue.Properties["string-key-2"].StringValue)
-	assert.Equal(t, int64(1), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-1"].IntegerValue)
-	assert.Equal(t, int64(2), entity.Properties["MapStringInt32"].EntityValue.Properties["int-key-2"].IntegerValue)
+	assert.Equal(t, srcProto.GetMapStringString(), dstProto.GetMapStringString())
+	assert.Equal(t, srcProto.GetMapStringInt32(), dstProto.GetMapStringInt32())
+
+	//assert google.protobuf.Struct
+	assert.Equal(t, srcProto.GetStructKey(), dstProto.GetStructKey())
+	//extra check to see if they are really equal
+	assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
+
+	//assert google.protobuf.timestamp
+	assert.Equal(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
 }
 
-func TestDatastoreEntityToProtoMessage(t *testing.T) {
-	properties := make(map[string]datastore.Value)
-	properties["StringKey"] = datastore.Value{
-		StringValue: "some random string key",
-	}
-	properties["Int64Key"] = datastore.Value{
-		IntegerValue: 64,
-	}
-	properties["DoubleKey"] = datastore.Value{
-		DoubleValue: float64(64),
-	}
-	properties["BoolKey"] = datastore.Value{
-		BooleanValue: false,
-	}
-	properties["EnumKey"] = datastore.Value{
-		IntegerValue: 2,
-	}
-	properties["MapStringString"] = datastore.Value{
-		EntityValue: &datastore.Entity{
-			Properties: map[string]datastore.Value{
-				"k1": datastore.Value{
-					StringValue: "some-string-key-1",
-				},
-				"k2": datastore.Value{
-					StringValue: "some-string-key-2",
-				},
-			},
+func TestPartialModel(t *testing.T) {
+	partialProto := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+			"struct-key-list":   {Kind: &structpb.Value_ListValue{}},
 		},
 	}
-	properties["MapStringInt32"] = datastore.Value{
-		EntityValue: &datastore.Entity{
-			Properties: map[string]datastore.Value{
-				"int-key-1": datastore.Value{
-					IntegerValue: 10,
-				},
-				"int-key-2": datastore.Value{
-					IntegerValue: 20,
-				},
-			},
-		},
+	entity, err := ProtoMessageToDatastoreEntity(partialProto)
+	assert.NoError(t, err, err)
+	log.Println(entity)
+	dstProto := &structpb.Struct{}
+	err = DatastoreEntityToProtoMessage(entity, dstProto)
+	assert.Error(t, err)
+}
+
+func TestUnSupportedTypes(t *testing.T) {
+	srcProto := &unsupported.Model{
+		Uint32Key: uint32(10),
 	}
+	_, err := ProtoMessageToDatastoreEntity(srcProto)
+	assert.EqualError(t, err, "datatype[uint32] not supported")
 
 	entity := datastore.Entity{
-		Properties: properties,
+		Properties: []datastore.Property{
+			{
+				Name:  "uint32",
+				Value: uint32(10),
+			},
+		},
 	}
-	dbModel := &example.ExampleDBModel{}
-	DatastoreEntityToProtoMessage(entity, dbModel)
-	assert.Equal(t, properties["StringKey"].StringValue, dbModel.GetStringKey())
-	assert.Equal(t, entity.Properties["Int64Key"].IntegerValue, dbModel.GetInt64Key())
-	assert.Equal(t, entity.Properties["BoolKey"].BooleanValue, dbModel.GetBoolKey())
-	assert.Equal(t, entity.Properties["DoubleKey"].DoubleValue, dbModel.GetDoubleKey())
-	assert.Equal(t, example.ExampleEnumModel_ENUM2, dbModel.GetEnumKey())
-	//assert map[string]string
-	assert.Equal(t, map[string]string{"k1": "some-string-key-1", "k2": "some-string-key-2"}, dbModel.GetMapStringString())
-	//assert map[string]int32
-	assert.Equal(t, map[string]int32{"int-key-1": 10, "int-key-2": 20}, dbModel.GetMapStringInt32())
+	err = DatastoreEntityToProtoMessage(entity, srcProto)
+	assert.EqualError(t, err, "datatype[uint32] not supported")
 }
