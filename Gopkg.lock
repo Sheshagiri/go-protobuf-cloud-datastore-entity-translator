@@ -165,11 +165,9 @@
   version = "v0.3.2"
 
 [[projects]]
-  digest = "1:26f740b2cee0a10ea1ac2bb72eb231b857e5b002c29a880a61976dd7ace863e3"
+  digest = "1:341d8e5c30ab07533e4a9a5c0203138160984e2553415e9cb5d113fe31185800"
   name = "google.golang.org/api"
   packages = [
-    "datastore/v1",
-    "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
     "googleapi/transport",
@@ -278,10 +276,11 @@
   input-imports = [
     "cloud.google.com/go/datastore",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/struct",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/stretchr/testify/assert",
-    "google.golang.org/api/datastore/v1",
+    "google.golang.org/genproto/googleapis/datastore/v1",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
