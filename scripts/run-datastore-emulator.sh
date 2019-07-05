@@ -11,7 +11,7 @@ gcloud beta emulators datastore start --host-port=127.0.0.1:8081 --no-store-on-d
 EMULATOR_PID=$!
 
 # Give process some time to start up
-sleep 30
+sleep 25
 
 if ps -p ${EMULATOR_PID} > /dev/null; then
     echo "google cloud datastore emulator successfully started"
