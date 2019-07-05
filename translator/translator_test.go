@@ -1,14 +1,14 @@
 package translator
 
 import (
-	"testing"
-
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
-	"github.com/stretchr/testify/assert"
+	datastore "google.golang.org/genproto/googleapis/datastore/v1"
+	"gotest.tools/assert"
 	"log"
+	"testing"
 )
 
 func TestNestedModel(t *testing.T) {
@@ -18,11 +18,11 @@ func TestNestedModel(t *testing.T) {
 	}
 	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	// make sure there is no error
-	assert.NoError(t, err)
+	assert.NilError(t, err)
 	dstProto := &example.ExampleNestedModel{}
 	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	// make sure there is no error
-	assert.NoError(t, err)
+	assert.NilError(t, err)
 
 	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
 }
@@ -65,13 +65,13 @@ func TestFullyPopulatedModel(t *testing.T) {
 	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 
 	// make sure there is no error
-	assert.NoError(t, err)
+	assert.NilError(t, err)
 	log.Println(entity)
 	dstProto := &example.ExampleDBModel{}
 
 	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	// make sure there is no error
-	assert.NoError(t, err)
+	assert.NilError(t, err)
 
 	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
 	assert.Equal(t, srcProto.GetBoolKey(), dstProto.GetBoolKey())
@@ -80,24 +80,24 @@ func TestFullyPopulatedModel(t *testing.T) {
 	assert.Equal(t, srcProto.GetFloatKey(), dstProto.GetFloatKey())
 	assert.Equal(t, srcProto.GetDoubleKey(), dstProto.GetDoubleKey())
 	//TODO BlobValue returns a string
-	assert.Equal(t, srcProto.GetBytesKey(), dstProto.GetBytesKey())
+	assert.DeepEqual(t, srcProto.GetBytesKey(), dstProto.GetBytesKey())
 	//assert string array
-	assert.Equal(t, srcProto.GetStringArrayKey(), dstProto.GetStringArrayKey())
+	assert.DeepEqual(t, srcProto.GetStringArrayKey(), dstProto.GetStringArrayKey())
 	//assert int32 array
-	assert.Equal(t, srcProto.Int32ArrayKey, dstProto.Int32ArrayKey)
+	assert.DeepEqual(t, srcProto.Int32ArrayKey, dstProto.Int32ArrayKey)
 	// enums are converted to int's in datastore
 	assert.Equal(t, srcProto.GetEnumKey(), dstProto.GetEnumKey())
 	//assert map[string]string
-	assert.Equal(t, srcProto.GetMapStringString(), dstProto.GetMapStringString())
-	assert.Equal(t, srcProto.GetMapStringInt32(), dstProto.GetMapStringInt32())
+	assert.DeepEqual(t, srcProto.GetMapStringString(), dstProto.GetMapStringString())
+	assert.DeepEqual(t, srcProto.GetMapStringInt32(), dstProto.GetMapStringInt32())
 
 	//assert google.protobuf.Struct
-	assert.Equal(t, srcProto.GetStructKey(), dstProto.GetStructKey())
+	assert.DeepEqual(t, srcProto.GetStructKey(), dstProto.GetStructKey())
 	//extra check to see if they are really equal
 	assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
 
 	//assert google.protobuf.timestamp
-	assert.Equal(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
+	assert.DeepEqual(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
 }
 
 func TestPartialModel(t *testing.T) {
@@ -106,17 +106,20 @@ func TestPartialModel(t *testing.T) {
 			"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
 			// not ready for this yet
 			// "struct-key-list":   {Kind: &structpb.Value_ListValue{}},
+			"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
+			"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
+			"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 		},
 	}
 	entity, err := ProtoMessageToDatastoreEntity(partialProto, true)
-	assert.NoError(t, err, err)
+	assert.NilError(t, err, err)
 	log.Println(entity)
 	dstProto := &structpb.Struct{}
 	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
-	assert.NoError(t, err)
+	assert.NilError(t, err)
 
 	//assert google.protobuf.Struct
-	assert.Equal(t, partialProto.Fields["struct-key-string"], dstProto.Fields["struct-key-string"])
+	assert.DeepEqual(t, partialProto.Fields["struct-key-string"], dstProto.Fields["struct-key-string"])
 }
 
 func TestUnSupportedTypes(t *testing.T) {
@@ -124,7 +127,7 @@ func TestUnSupportedTypes(t *testing.T) {
 		Uint32Key: uint32(10),
 	}
 	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
-	assert.EqualError(t, err, "datatype[uint32] not supported")
+	assert.Error(t, err, "datatype[uint32] not supported")
 }
 
 func TestPMtoDE(t *testing.T) {
@@ -133,6 +136,119 @@ func TestPMtoDE(t *testing.T) {
 		Int32Key:  22,
 	}
 	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
-	assert.NoError(t, err)
+	assert.NilError(t, err)
 	log.Println(entity)
+}
+
+func TestFromStructValueDatastoreValue(t *testing.T) {
+	tests := []struct {
+		input  *structpb.Value
+		output *datastore.Value
+	}{
+		{
+			input: &structpb.Value{
+				Kind: &structpb.Value_StringValue{
+					StringValue: "some random string key for testing.",
+				},
+			},
+			output: &datastore.Value{
+				ValueType: &datastore.Value_StringValue{
+					StringValue: "some random string key for testing.",
+				},
+			},
+		},
+		{
+			input: &structpb.Value{
+				Kind: &structpb.Value_BoolValue{
+					BoolValue: true,
+				},
+			},
+			output: &datastore.Value{
+				ValueType: &datastore.Value_BooleanValue{
+					BooleanValue: true,
+				},
+			},
+		},
+		{
+			input: &structpb.Value{
+				Kind: &structpb.Value_NumberValue{
+					NumberValue: 15,
+				},
+			},
+			output: &datastore.Value{
+				ValueType: &datastore.Value_DoubleValue{
+					DoubleValue: float64(15),
+				},
+			},
+		},
+		{
+			input: &structpb.Value{
+				Kind: &structpb.Value_NullValue{},
+			},
+			output: &datastore.Value{
+				ValueType: &datastore.Value_NullValue{},
+			},
+		},
+		// TODO TDD not ready for nested list and struct yet
+		/*{
+			input: &structpb.Value{
+				Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{Kind: &structpb.Value_NumberValue{NumberValue: 10}},
+							{Kind: &structpb.Value_StringValue{StringValue: "hello, world"}},
+							{Kind: &structpb.Value_BoolValue{BoolValue: true}},
+							{Kind: &structpb.Value_NumberValue{NumberValue: 200}},
+						},
+					},
+				},
+			},
+			output: &datastore.Value{
+				ValueType: &datastore.Value_ArrayValue{
+					ArrayValue: &datastore.ArrayValue{
+						Values: []*datastore.Value{
+							{ValueType: &datastore.Value_DoubleValue{DoubleValue: 10}},
+							{ValueType: &datastore.Value_StringValue{StringValue: "hello, world"}},
+							{ValueType: &datastore.Value_BooleanValue{BooleanValue: true}},
+							{ValueType: &datastore.Value_DoubleValue{DoubleValue: 200}},
+						},
+					},
+				},
+			},
+		},
+		{
+			input: &structpb.Value{
+				Kind: &structpb.Value_StructValue{
+					StructValue: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+							// not ready for this yet
+							// "struct-key-list":   {Kind: &structpb.Value_ListValue{}},
+							"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
+							"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
+							"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
+						},
+					},
+				},
+			},
+			output: &datastore.Value{
+				ValueType: &datastore.Value_EntityValue{
+					EntityValue: &datastore.Entity{
+						Properties: map[string]*datastore.Value{
+							"struct-key-string": {ValueType: &datastore.Value_StringValue{"some random string in proto.Struct"}},
+							// not ready for this yet
+							// "struct-key-list":   {ValueType: &datastore.Value_ArrayValue{}},
+							"struct-key-bool":   {ValueType: &datastore.Value_BooleanValue{true}},
+							"struct-key-number": {ValueType: &datastore.Value_DoubleValue{float64(123456.12)}},
+							"struct-key-null":   {ValueType: &datastore.Value_NullValue{}},
+						},
+					},
+				},
+			},
+		},*/
+	}
+	for _, test := range tests {
+		actualPBValue := fromStructValueDatastoreValue(test.input)
+		assert.DeepEqual(t, test.output, actualPBValue)
+	}
 }

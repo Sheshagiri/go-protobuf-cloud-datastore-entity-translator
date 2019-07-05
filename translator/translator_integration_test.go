@@ -3,14 +3,14 @@
 package translator
 
 import (
+	"cloud.google.com/go/datastore"
 	"context"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/struct"
+	"gotest.tools/assert"
 	"log"
 	"testing"
-	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
-	"cloud.google.com/go/datastore"
-	"github.com/golang/protobuf/ptypes/struct"
-	"github.com/golang/protobuf/ptypes"
-	"gotest.tools/assert"
 )
 
 func TestIntegration(t *testing.T) {
@@ -55,23 +55,22 @@ func TestIntegration(t *testing.T) {
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 			},
 		},
-		TimestampKey: ptypes.TimestampNow(),
+		//TimestampKey: ptypes.TimestampNow(),
 	}
 
-
-	log.Printf("original proto: %v",srcProto)
+	log.Printf("original proto: %v", srcProto)
 	// 4. translate the source protobuf to datastore.Entity
 	translatedSrcProto, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	assert.NilError(t, err)
 
 	// 5. save the translated protobuf to datastore
-	_, err = client.PutEntity(ctx, key,&translatedSrcProto)
+	_, err = client.PutEntity(ctx, key, &translatedSrcProto)
 	assert.NilError(t, err)
 
 	// 6. get the saved protobuf from cloud datastore
 	datastoreEntity, err := client.GetEntity(ctx, key)
 	assert.NilError(t, err)
-	log.Printf("entity from cloud datastore: %v",datastoreEntity)
+	log.Printf("entity from cloud datastore: %v", datastoreEntity)
 
 	// 7. create a protobuf that we plan to decode into
 	dstProto := &example.ExampleDBModel{}
@@ -80,9 +79,8 @@ func TestIntegration(t *testing.T) {
 	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, true)
 	assert.NilError(t, err)
 
-
-	log.Printf("original proto                   : %v",srcProto)
-	log.Printf("datastore entity to proto message: %v",dstProto)
+	log.Printf("original proto                   : %v", srcProto)
+	log.Printf("datastore entity to proto message: %v", dstProto)
 
 	// 9. start validating srcProto and dstProto should be equal
 	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
@@ -105,7 +103,6 @@ func TestIntegration(t *testing.T) {
 	//TODO BlobValue returns a string
 	assert.DeepEqual(t, srcProto.GetBytesKey(), dstProto.GetBytesKey())
 
-
 	//extra check to see if they are really equal
 	assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
 
@@ -115,4 +112,40 @@ func TestIntegration(t *testing.T) {
 	//assert google.protobuf.timestamp
 	assert.DeepEqual(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
 
+}
+
+func TestEmptyProtoMessage(t *testing.T) {
+	ctx := context.Background()
+	// 1. create a new datastore client
+	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
+	assert.NilError(t, err)
+
+	// 2. create a key that we plan to save into
+	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
+
+	srcProto := &example.ExampleDBModel{}
+	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	assert.NilError(t, err)
+
+	_, err = client.PutEntity(ctx, key, &translatedProto)
+	//e expect an error when the whole proto is empty
+	assert.Error(t, err, "rpc error: code = Internal desc = grpc: error while marshaling: proto: oneof field has nil value")
+}
+
+func TestProtoWithNilPointer(t *testing.T) {
+	ctx := context.Background()
+	// 1. create a new datastore client
+	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
+	assert.NilError(t, err)
+
+	// 2. create a key that we plan to save into
+	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
+
+	srcProto := &example.ExampleDBModel{
+		TimestampKey: ptypes.TimestampNow(),
+	}
+	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	assert.NilError(t, err)
+
+	_, err = client.PutEntity(ctx, key, &translatedProto)
 }

@@ -10,26 +10,28 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	pb "google.golang.org/genproto/googleapis/datastore/v1"
+	datastore "google.golang.org/genproto/googleapis/datastore/v1"
 	"regexp"
 )
 
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
-func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity pb.Entity, err error) {
+func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity datastore.Entity, err error) {
 	srcValues := reflect.ValueOf(src).Elem()
-	properties := make(map[string]*pb.Value)
+	properties := make(map[string]*datastore.Value)
 
 	for i := 0; i < srcValues.NumField(); i++ {
 		fName := srcValues.Type().Field(i).Name
 		if !strings.ContainsAny(fName, "XXX_") {
-			var value *pb.Value
-			if value, err = toValue(srcValues.Field(i)); err != nil {
+			var value *datastore.Value
+			if value, err = toDatastoreValue(srcValues.Field(i)); err != nil {
 				return
 			} else {
-				if snakeCase {
-					fName = toSnakeCase(fName)
+				if value.ValueType != nil {
+					if snakeCase {
+						fName = toSnakeCase(fName)
+					}
+					properties[fName] = value
 				}
-				properties[fName] = value
 			}
 		}
 	}
@@ -38,7 +40,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity pb
 }
 
 // DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
-func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase bool) (err error) {
+func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, snakeCase bool) (err error) {
 	dstValues := reflect.ValueOf(dst).Elem()
 	for i := 0; i < dstValues.NumField(); i++ {
 		fName := dstValues.Type().Field(i).Name
@@ -103,7 +105,7 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 				case "map[string]*structpb.Value":
 					m := make(map[string]*structpb.Value)
 					for key, value := range entity.Properties {
-						if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
 							m[key] = &structpb.Value{
 								Kind: &structpb.Value_StringValue{
 									StringValue: x.GetStringValue(),
@@ -111,7 +113,7 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 							}
 							continue
 						}
-						if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
 							m[key] = &structpb.Value{
 								Kind: &structpb.Value_BoolValue{
 									BoolValue: x.GetBooleanValue(),
@@ -119,7 +121,7 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 							}
 							continue
 						}
-						if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
 							m[key] = &structpb.Value{
 								Kind: &structpb.Value_NumberValue{
 									NumberValue: x.GetDoubleValue(),
@@ -127,7 +129,7 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 							}
 							continue
 						}
-						if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
 							m[key] = &structpb.Value{
 								Kind: &structpb.Value_NullValue{
 									NullValue: x.GetNullValue(),
@@ -167,35 +169,35 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 							m := make(map[string]*structpb.Value)
 							for key, value := range entityValue.Properties {
 								log.Printf("value type is: %T", value.ValueType)
-								if val, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_DoubleValue); ok {
+								if val, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_DoubleValue); ok {
 									m[key] = &structpb.Value{
-										Kind:&structpb.Value_NumberValue{
+										Kind: &structpb.Value_NumberValue{
 											val.DoubleValue,
 										},
 									}
-								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_StringValue); ok {
+								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_StringValue); ok {
 									m[key] = &structpb.Value{
-										Kind:&structpb.Value_StringValue{
+										Kind: &structpb.Value_StringValue{
 											val.StringValue,
 										},
 									}
-								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_BooleanValue); ok {
+								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_BooleanValue); ok {
 									m[key] = &structpb.Value{
-										Kind:&structpb.Value_BoolValue{
+										Kind: &structpb.Value_BoolValue{
 											val.BooleanValue,
 										},
 									}
-								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_NullValue); ok {
+								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_NullValue); ok {
 									m[key] = &structpb.Value{
-										Kind:&structpb.Value_NullValue{},
+										Kind: &structpb.Value_NullValue{},
 									}
-								} /*else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_ArrayValue); ok {
+								} /*else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_ArrayValue); ok {
 									m[key] = &structpb.Value{
 										Kind:&structpb.Value_ListValue{
 
 										},
 									}
-								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_EntityValue); ok {
+								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_EntityValue); ok {
 									m[key] = &structpb.Value{
 										Kind:&structpb.Value_StructValue{
 
@@ -217,141 +219,81 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 	return
 }
 
-func toValue(fValue reflect.Value) (*pb.Value, error) {
-	value := &pb.Value{}
+func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
+	value := &datastore.Value{}
 	var err error
 	switch fValue.Kind() {
 	case reflect.String:
-		value.ValueType = &pb.Value_StringValue{
+		value.ValueType = &datastore.Value_StringValue{
 			StringValue: fValue.String(),
 		}
 	case reflect.Bool:
-		value.ValueType = &pb.Value_BooleanValue{
+		value.ValueType = &datastore.Value_BooleanValue{
 			BooleanValue: fValue.Bool(),
 		}
 	case reflect.Int64, reflect.Int32:
-		value.ValueType = &pb.Value_IntegerValue{
+		value.ValueType = &datastore.Value_IntegerValue{
 			IntegerValue: fValue.Int(),
 		}
 	case reflect.Float32, reflect.Float64:
-		value.ValueType = &pb.Value_DoubleValue{
+		value.ValueType = &datastore.Value_DoubleValue{
 			DoubleValue: fValue.Float(),
 		}
 	case reflect.Slice:
 		//TODO add complex type to the slice
 		if fValue.Type().Elem().Kind() == reflect.Uint8 {
 			//BlobValue is a string in the datastore entity proto
-			value.ValueType = &pb.Value_BlobValue{
+			value.ValueType = &datastore.Value_BlobValue{
 				BlobValue: fValue.Bytes(),
 			}
 		} else {
 			size := fValue.Len()
-			values := make([]*pb.Value, 0)
+			values := make([]*datastore.Value, 0)
 			for i := 0; i < size; i++ {
-				val, _ := toValue(fValue.Index(i))
+				val, _ := toDatastoreValue(fValue.Index(i))
 				values = append(values, val)
 			}
-			value.ValueType = &pb.Value_ArrayValue{
-				ArrayValue: &pb.ArrayValue{
+			value.ValueType = &datastore.Value_ArrayValue{
+				ArrayValue: &datastore.ArrayValue{
 					Values: values,
 				},
 			}
 		}
 	case reflect.Map:
 		mapValues := reflect.ValueOf(fValue.Interface())
-		entity := &pb.Entity{}
-		properties := make(map[string]*pb.Value)
+		entity := &datastore.Entity{}
+		properties := make(map[string]*datastore.Value)
 		for _, key := range mapValues.MapKeys() {
 			k := fmt.Sprint(key)
 			//TODO what if there is an error?
-			v, _ := toValue(mapValues.MapIndex(key))
+			v, _ := toDatastoreValue(mapValues.MapIndex(key))
 			//fmt.Printf("key; %v, value: %v\n",k,v)
 			properties[k] = v
 		}
 		entity.Properties = properties
-		value.ValueType = &pb.Value_EntityValue{
+		value.ValueType = &datastore.Value_EntityValue{
 			EntityValue: entity,
 		}
 	case reflect.Ptr:
-		switch fValue.Type().String() {
-		// I can't get hold of the type with Kind() here, look at Indirect() later
-		case "*structpb.Struct":
-			log.Println("inside *structpb.Struct")
-			if !fValue.IsNil() {
-				fields := fValue.Elem().FieldByName("Fields")
-				properties := make(map[string]*pb.Value)
-				for _, value := range fields.MapKeys() {
-					v := fields.MapIndex(value).Interface().(*structpb.Value)
-					//don't know if there is another way of doing this, trick here is *structpb.Value
-					if x, ok := v.GetKind().(*structpb.Value_StringValue); ok {
-						properties[fmt.Sprint(value)] = &pb.Value{
-							ValueType: &pb.Value_StringValue{
-								StringValue: x.StringValue,
-							},
-						}
-					} else if x, ok := v.GetKind().(*structpb.Value_BoolValue); ok {
-						properties[fmt.Sprint(value)] = &pb.Value{
-							ValueType: &pb.Value_BooleanValue{
-								BooleanValue: x.BoolValue,
-							},
-						}
-					} else if x, ok := v.GetKind().(*structpb.Value_NumberValue); ok {
-						//structpbStruct on supports float64
-						properties[fmt.Sprint(value)] = &pb.Value{
-							ValueType: &pb.Value_DoubleValue{
-								DoubleValue: x.NumberValue,
-							},
-						}
-					} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
-						err = errors.New("list inside a google.protobuf.Struct is not supported yet")
-						// TODO  figure out this
-					} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
-						properties[fmt.Sprint(value)] = &pb.Value{
-							ValueType: &pb.Value_NullValue{
-								NullValue: x.NullValue,
-							},
-						}
-					}
-				}
-				value.ValueType = &pb.Value_EntityValue{
-					EntityValue: &pb.Entity{
-						Properties: properties,
-					},
-				}
+		iv := fValue.Interface()
+		switch v := iv.(type) {
+		case *structpb.Struct:
+			properties := make(map[string]*datastore.Value)
+			for key, value := range v.Fields {
+				properties[key] = fromStructValueDatastoreValue(value)
 			}
-		case "*timestamp.Timestamp":
-			if !fValue.IsNil() {
-				ts := fValue.Interface().(*timestamp.Timestamp)
-				value.ValueType = &pb.Value_TimestampValue{
-					TimestampValue: ts,
-				}
+			value.ValueType = &datastore.Value_EntityValue{
+				EntityValue: &datastore.Entity{
+					Properties: properties,
+				},
 			}
-		case "*structpb.Value":
-		if !fValue.IsNil() {
-			v := fValue.Interface().(*structpb.Value)
-			//don't know if there is another way of doing this, trick here is *structpb.Value
-			if x, ok := v.GetKind().(*structpb.Value_StringValue); ok {
-				value.ValueType = &pb.Value_StringValue{
-					StringValue: x.StringValue,
-				}
-			} else if x, ok := v.GetKind().(*structpb.Value_BoolValue); ok {
-				value.ValueType = &pb.Value_BooleanValue{
-					BooleanValue: x.BoolValue,
-				}
-			} else if x, ok := v.GetKind().(*structpb.Value_NumberValue); ok {
-				//structpbStruct on supports float64
-				value.ValueType = &pb.Value_DoubleValue{
-					DoubleValue: x.NumberValue,
-				}
-			} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
-				err = errors.New("list inside a google.protobuf.Struct is not supported yet")
-				// TODO  figure out this
-			} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
-				value.ValueType = &pb.Value_NullValue{
-					NullValue: x.NullValue,
-				}
+		case *timestamp.Timestamp:
+			ts := fValue.Interface().(*timestamp.Timestamp)
+			value.ValueType = &datastore.Value_TimestampValue{
+				TimestampValue: ts,
 			}
-		}
+		case *structpb.Value:
+			value = fromStructValueDatastoreValue(v)
 		default:
 			errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
 			log.Println(errString)
@@ -363,6 +305,37 @@ func toValue(fValue reflect.Value) (*pb.Value, error) {
 		err = errors.New(errString)
 	}
 	return value, err
+}
+
+func fromStructValueDatastoreValue(v *structpb.Value) *datastore.Value {
+	pbValue := &datastore.Value{}
+	switch v.GetKind().(type) {
+	case *structpb.Value_StringValue:
+		pbValue.ValueType = &datastore.Value_StringValue{
+			StringValue: v.GetStringValue(),
+		}
+	case *structpb.Value_BoolValue:
+		pbValue.ValueType = &datastore.Value_BooleanValue{
+			BooleanValue: v.GetBoolValue(),
+		}
+	case *structpb.Value_NumberValue:
+		pbValue.ValueType = &datastore.Value_DoubleValue{
+			DoubleValue: v.GetNumberValue(),
+		}
+	case *structpb.Value_NullValue:
+		pbValue.ValueType = &datastore.Value_NullValue{
+			NullValue: v.GetNullValue(),
+		}
+		/*case *structpb.Value_ListValue:
+			pbValue.ValueType = &datastore.Value_ArrayValue{
+				ArrayValue:v.GetListValue(),
+			}
+		case *structpb.Value_StructValue:
+			pbValue.ValueType = &datastore.Value_EntityValue{
+				EntityValue:v.GetStructValue(),
+			}*/
+	}
+	return pbValue
 }
 
 func toSnakeCase(name string) string {
