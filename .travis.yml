@@ -32,7 +32,7 @@ script:
   - cd translator
   - echo $DATASTORE_EMULATOR_HOST
   - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
-  - go test -v ./... -race -tags=integration
+#  - go test -v ./... -race -tags=integration
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
