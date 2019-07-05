@@ -38,7 +38,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity pb
 }
 
 // DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
-func DatastoreEntityToProtoMessage(src pb.Entity, dst proto.Message, snakeCase bool) (err error) {
+func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase bool) (err error) {
 	dstValues := reflect.ValueOf(dst).Elem()
 	for i := 0; i < dstValues.NumField(); i++ {
 		fName := dstValues.Type().Field(i).Name
@@ -164,50 +164,39 @@ func DatastoreEntityToProtoMessage(src pb.Entity, dst proto.Message, snakeCase b
 							s := &structpb.Struct{}
 							m := make(map[string]*structpb.Value)
 							for key, value := range entityValue.Properties {
-								if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+								log.Printf("value type is: %T", value.ValueType)
+								if val, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_DoubleValue); ok {
 									m[key] = &structpb.Value{
-										Kind: &structpb.Value_StringValue{
-											StringValue: x.GetStringValue(),
+										Kind:&structpb.Value_NumberValue{
+											val.DoubleValue,
 										},
 									}
-									continue
-								}
-								if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_StringValue); ok {
 									m[key] = &structpb.Value{
-										Kind: &structpb.Value_BoolValue{
-											BoolValue: x.GetBooleanValue(),
+										Kind:&structpb.Value_StringValue{
+											val.StringValue,
 										},
 									}
-									continue
-								}
-								if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_BooleanValue); ok {
 									m[key] = &structpb.Value{
-										Kind: &structpb.Value_NumberValue{
-											NumberValue: x.GetDoubleValue(),
+										Kind:&structpb.Value_BoolValue{
+											val.BooleanValue,
 										},
 									}
-									continue
-								}
-								if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_NullValue); ok {
 									m[key] = &structpb.Value{
-										Kind: &structpb.Value_NullValue{
-											NullValue: x.GetNullValue(),
-										},
+										Kind:&structpb.Value_NullValue{},
 									}
-									continue
-								}
-								//TODO handle list and struct specially
-								/*if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
-									m[key] = &structpb.Value{
-										Kind:&structpb.Value_StructValue{
-											StructValue:x.GetEntityValue(),
-										},
-									}
-								}
-								if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
+								} /*else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_ArrayValue); ok {
 									m[key] = &structpb.Value{
 										Kind:&structpb.Value_ListValue{
-											ListValue:x.GetArrayValue(),
+
+										},
+									}
+								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*pb.Value_EntityValue); ok {
+									m[key] = &structpb.Value{
+										Kind:&structpb.Value_StructValue{
+
 										},
 									}
 								}*/
@@ -336,31 +325,31 @@ func toValue(fValue reflect.Value) (*pb.Value, error) {
 				}
 			}
 		case "*structpb.Value":
-			if !fValue.IsNil() {
-				v := fValue.Interface().(*structpb.Value)
-				//don't know if there is another way of doing this, trick here is *structpb.Value
-				if x, ok := v.GetKind().(*structpb.Value_StringValue); ok {
-					value.ValueType = &pb.Value_StringValue{
-						StringValue: x.StringValue,
-					}
-				} else if x, ok := v.GetKind().(*structpb.Value_BoolValue); ok {
-					value.ValueType = &pb.Value_BooleanValue{
-						BooleanValue: x.BoolValue,
-					}
-				} else if x, ok := v.GetKind().(*structpb.Value_NumberValue); ok {
-					//structpbStruct on supports float64
-					value.ValueType = &pb.Value_DoubleValue{
-						DoubleValue: x.NumberValue,
-					}
-				} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
-					err = errors.New("list inside a google.protobuf.Struct is not supported yet")
-					// TODO  figure out this
-				} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
-					value.ValueType = &pb.Value_NullValue{
-						NullValue: x.NullValue,
-					}
+		if !fValue.IsNil() {
+			v := fValue.Interface().(*structpb.Value)
+			//don't know if there is another way of doing this, trick here is *structpb.Value
+			if x, ok := v.GetKind().(*structpb.Value_StringValue); ok {
+				value.ValueType = &pb.Value_StringValue{
+					StringValue: x.StringValue,
+				}
+			} else if x, ok := v.GetKind().(*structpb.Value_BoolValue); ok {
+				value.ValueType = &pb.Value_BooleanValue{
+					BooleanValue: x.BoolValue,
+				}
+			} else if x, ok := v.GetKind().(*structpb.Value_NumberValue); ok {
+				//structpbStruct on supports float64
+				value.ValueType = &pb.Value_DoubleValue{
+					DoubleValue: x.NumberValue,
+				}
+			} else if _, ok := v.GetKind().(*structpb.Value_ListValue); ok {
+				err = errors.New("list inside a google.protobuf.Struct is not supported yet")
+				// TODO  figure out this
+			} else if x, ok := v.GetKind().(*structpb.Value_NullValue); ok {
+				value.ValueType = &pb.Value_NullValue{
+					NullValue: x.NullValue,
 				}
 			}
+		}
 		default:
 			errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
 			log.Println(errString)

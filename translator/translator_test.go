@@ -20,7 +20,7 @@ func TestNestedModel(t *testing.T) {
 	// make sure there is no error
 	assert.NoError(t, err)
 	dstProto := &example.ExampleNestedModel{}
-	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
+	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	// make sure there is no error
 	assert.NoError(t, err)
 
@@ -52,14 +52,14 @@ func TestFullyPopulatedModel(t *testing.T) {
 			"int-key-1": 1,
 			"int-key-2": 2,
 		},
-		/*StructKey: &structpb.Struct{
+		StructKey: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
 				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
 				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 			},
-		},*/
+		},
 		TimestampKey: ptypes.TimestampNow(),
 	}
 	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
@@ -69,7 +69,7 @@ func TestFullyPopulatedModel(t *testing.T) {
 	log.Println(entity)
 	dstProto := &example.ExampleDBModel{}
 
-	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
+	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	// make sure there is no error
 	assert.NoError(t, err)
 
@@ -92,9 +92,9 @@ func TestFullyPopulatedModel(t *testing.T) {
 	assert.Equal(t, srcProto.GetMapStringInt32(), dstProto.GetMapStringInt32())
 
 	//assert google.protobuf.Struct
-	//assert.Equal(t, srcProto.GetStructKey(), dstProto.GetStructKey())
+	assert.Equal(t, srcProto.GetStructKey(), dstProto.GetStructKey())
 	//extra check to see if they are really equal
-	//assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
+	assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
 
 	//assert google.protobuf.timestamp
 	assert.Equal(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
@@ -112,7 +112,7 @@ func TestPartialModel(t *testing.T) {
 	assert.NoError(t, err, err)
 	log.Println(entity)
 	dstProto := &structpb.Struct{}
-	err = DatastoreEntityToProtoMessage(entity, dstProto, true)
+	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	assert.NoError(t, err)
 
 	//assert google.protobuf.Struct
@@ -136,3 +136,57 @@ func TestPMtoDE(t *testing.T) {
 	assert.NoError(t, err)
 	log.Println(entity)
 }
+
+/*func TestPropertyToValue(t *testing.T) {
+	tests := []struct {
+		src datastore.Property
+		dst *structpb.Value
+	}{
+		{
+			src: datastore.Property{
+				Name:  "string-key",
+				Value: "string",
+			},
+			dst: &structpb.Value{
+				Kind: &structpb.Value_StringValue{
+					StringValue: "string",
+				},
+			},
+		},
+		{
+			src: datastore.Property{
+				Name:  "float64-key",
+				Value: float64(200),
+			},
+			dst: &structpb.Value{
+				Kind: &structpb.Value_NumberValue{
+					NumberValue: float64(200),
+				},
+			},
+		},
+		{
+			src: datastore.Property{
+				Name:  "boolean-key",
+				Value: true,
+			},
+			dst: &structpb.Value{
+				Kind: &structpb.Value_BoolValue{
+					BoolValue: true,
+				},
+			},
+		},
+		// TODO test null value
+		*//*{
+			src: datastore.Property{
+				Name:  "null-key",
+				Value: "",
+			},
+			dst: &structpb.Value{
+				Kind: &structpb.Value_NullValue{},
+			},
+		},*//*
+	}
+	for _, test := range tests {
+		assert.Equal(t, propertyToValue(test.src), test.dst)
+	}
+}*/
