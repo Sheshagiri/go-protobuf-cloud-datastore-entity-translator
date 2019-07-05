@@ -4,11 +4,7 @@ go:
  - 1.12.x
 
 os: linux
-dist: trusty
-addons:
-  apt:
-    packages:
-    - google-cloud-sdk
+dist: xenial
 
 sudo: false
 
@@ -24,8 +20,12 @@ notifications:
 install: true
 
 before_script:
-  - gcloud beta emulators datastore start &
-  - $(gcloud beta emulators datastore env-init)
+  - export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+  - echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+  - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+  - sudo apt-get update && sudo apt-get install google-cloud-sdk
+  - nohup gcloud beta emulators datastore start &
+  - sleep 30
 
 script:
   - cd translator
