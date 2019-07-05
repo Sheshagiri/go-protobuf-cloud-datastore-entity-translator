@@ -26,9 +26,11 @@ before_script:
   - sudo apt-get update && sudo apt-get install google-cloud-sdk
   - nohup gcloud beta emulators datastore start &
   - sleep 30
+  - export DATASTORE_EMULATOR_HOST=localhost:8081
 
 script:
   - cd translator
+  - echo $DATASTORE_EMULATOR_HOST
   - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
   - go test -v ./... -race -tags=integration
 
