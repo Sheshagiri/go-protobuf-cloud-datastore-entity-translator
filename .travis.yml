@@ -18,7 +18,7 @@ notifications:
 
 before_install:
   - sh scripts/run-datastore-emulator.sh
-  - export DATASTORE_EMULATOR_HOST=127.0.0.1:8432
+  - export DATASTORE_EMULATOR_HOST=127.0.0.1:8081
   - export DATASTORE_PROJECT_ID=st2-saas-prototype-dev
 
 install: true
