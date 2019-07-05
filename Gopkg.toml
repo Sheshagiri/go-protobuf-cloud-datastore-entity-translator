@@ -27,7 +27,9 @@
 
 [[constraint]]
   name = "cloud.google.com/go"
-  version = "0.41.0"
+  #version = "0.41.0"
+  branch = "sheshagiri/added-put-entity"
+  source = "github.com/Sheshagiri/google-cloud-go"	
 
 [[constraint]]
   name = "github.com/golang/protobuf"
