@@ -157,7 +157,9 @@ func DatastoreEntityToProtoMessage(src *pb.Entity, dst proto.Message, snakeCase 
 				if !reflect.ValueOf(fValue).IsNil() {
 					switch dstValues.Type().Field(i).Type.String() {
 					case "*timestamp.Timestamp":
-						dstValues.Field(i).Set(reflect.ValueOf(fValue.GetTimestampValue()))
+						if fValue.GetTimestampValue() != nil {
+							dstValues.Field(i).Set(reflect.ValueOf(fValue.GetTimestampValue()))
+						}
 					case "*structpb.Struct":
 						entityValue := fValue.GetEntityValue()
 						if entityValue != nil {

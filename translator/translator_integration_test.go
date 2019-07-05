@@ -113,6 +113,6 @@ func TestIntegration(t *testing.T) {
 	assert.DeepEqual(t, srcProto.GetStructKey().Fields, dstProto.GetStructKey().Fields)
 
 	//assert google.protobuf.timestamp
-	//assert.Equal(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
+	assert.DeepEqual(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
 
 }
