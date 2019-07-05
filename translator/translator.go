@@ -105,105 +105,26 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 				case "map[string]*structpb.Value":
 					m := make(map[string]*structpb.Value)
 					for key, value := range entity.Properties {
-						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
-							m[key] = &structpb.Value{
-								Kind: &structpb.Value_StringValue{
-									StringValue: x.GetStringValue(),
-								},
-							}
-							continue
-						}
-						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
-							m[key] = &structpb.Value{
-								Kind: &structpb.Value_BoolValue{
-									BoolValue: x.GetBooleanValue(),
-								},
-							}
-							continue
-						}
-						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
-							m[key] = &structpb.Value{
-								Kind: &structpb.Value_NumberValue{
-									NumberValue: x.GetDoubleValue(),
-								},
-							}
-							continue
-						}
-						if x, ok := reflect.ValueOf(value).Interface().(*datastore.Value); ok {
-							m[key] = &structpb.Value{
-								Kind: &structpb.Value_NullValue{
-									NullValue: x.GetNullValue(),
-								},
-							}
-							continue
-						}
-						//TODO handle list and struct specially
-						/*if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
-							m[key] = &structpb.Value{
-								Kind:&structpb.Value_StructValue{
-									StructValue:x.GetEntityValue(),
-								},
-							}
-						}
-						if x, ok := reflect.ValueOf(value).Interface().(*pb.Value); ok {
-							m[key] = &structpb.Value{
-								Kind:&structpb.Value_ListValue{
-									ListValue:x.GetArrayValue(),
-								},
-							}
-						}*/
+						m[key] = fromDatastoreValueToStructValue(value)
 					}
 					dstValues.Field(i).Set(reflect.ValueOf(m))
 				}
 			case reflect.Ptr:
 				if !reflect.ValueOf(fValue).IsNil() {
-					switch dstValues.Type().Field(i).Type.String() {
-					case "*timestamp.Timestamp":
+					//switch v := dstValues.Field(i).Interface().(type) {
+					switch v := reflect.ValueOf(fValue.ValueType).Interface().(type) {
+					case *datastore.Value_TimestampValue:
 						if fValue.GetTimestampValue() != nil {
 							dstValues.Field(i).Set(reflect.ValueOf(fValue.GetTimestampValue()))
 						}
-					case "*structpb.Struct":
-						entityValue := fValue.GetEntityValue()
-						if entityValue != nil {
+					case *datastore.Value_EntityValue:
+						properties := v.EntityValue.Properties
+						if properties != nil {
 							s := &structpb.Struct{}
 							m := make(map[string]*structpb.Value)
-							for key, value := range entityValue.Properties {
+							for key, value := range properties {
 								log.Printf("value type is: %T", value.ValueType)
-								if val, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_DoubleValue); ok {
-									m[key] = &structpb.Value{
-										Kind: &structpb.Value_NumberValue{
-											val.DoubleValue,
-										},
-									}
-								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_StringValue); ok {
-									m[key] = &structpb.Value{
-										Kind: &structpb.Value_StringValue{
-											val.StringValue,
-										},
-									}
-								} else if val, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_BooleanValue); ok {
-									m[key] = &structpb.Value{
-										Kind: &structpb.Value_BoolValue{
-											val.BooleanValue,
-										},
-									}
-								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_NullValue); ok {
-									m[key] = &structpb.Value{
-										Kind: &structpb.Value_NullValue{},
-									}
-								} /*else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_ArrayValue); ok {
-									m[key] = &structpb.Value{
-										Kind:&structpb.Value_ListValue{
-
-										},
-									}
-								} else if _, ok := reflect.ValueOf(value.ValueType).Interface().(*datastore.Value_EntityValue); ok {
-									m[key] = &structpb.Value{
-										Kind:&structpb.Value_StructValue{
-
-										},
-									}
-								}*/
+								m[key] = fromDatastoreValueToStructValue(value)
 							}
 							s.Fields = m
 							dstValues.Field(i).Set(reflect.ValueOf(s))
@@ -280,7 +201,7 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 		case *structpb.Struct:
 			properties := make(map[string]*datastore.Value)
 			for key, value := range v.Fields {
-				properties[key] = fromStructValueDatastoreValue(value)
+				properties[key] = fromStructValueToDatastoreValue(value)
 			}
 			value.ValueType = &datastore.Value_EntityValue{
 				EntityValue: &datastore.Entity{
@@ -293,7 +214,7 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 				TimestampValue: ts,
 			}
 		case *structpb.Value:
-			value = fromStructValueDatastoreValue(v)
+			value = fromStructValueToDatastoreValue(v)
 		default:
 			errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
 			log.Println(errString)
@@ -307,7 +228,7 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 	return value, err
 }
 
-func fromStructValueDatastoreValue(v *structpb.Value) *datastore.Value {
+func fromStructValueToDatastoreValue(v *structpb.Value) *datastore.Value {
 	pbValue := &datastore.Value{}
 	switch v.GetKind().(type) {
 	case *structpb.Value_StringValue:
@@ -326,14 +247,48 @@ func fromStructValueDatastoreValue(v *structpb.Value) *datastore.Value {
 		pbValue.ValueType = &datastore.Value_NullValue{
 			NullValue: v.GetNullValue(),
 		}
-		/*case *structpb.Value_ListValue:
-			pbValue.ValueType = &datastore.Value_ArrayValue{
-				ArrayValue:v.GetListValue(),
-			}
-		case *structpb.Value_StructValue:
-			pbValue.ValueType = &datastore.Value_EntityValue{
-				EntityValue:v.GetStructValue(),
-			}*/
+	case *structpb.Value_ListValue:
+		values := make([]*datastore.Value, 0)
+		for _, val := range v.GetListValue().Values {
+			values = append(values, fromStructValueToDatastoreValue(val))
+		}
+		pbValue.ValueType = &datastore.Value_ArrayValue{
+			ArrayValue: &datastore.ArrayValue{
+				Values: values,
+			},
+		}
+		/*case *structpb.Value_StructValue:
+		pbValue.ValueType = &datastore.Value_EntityValue{
+			EntityValue:v.GetStructValue(),
+		}*/
+	}
+	return pbValue
+}
+
+func fromDatastoreValueToStructValue(v *datastore.Value) *structpb.Value {
+	pbValue := &structpb.Value{}
+	iv := reflect.ValueOf(v.ValueType).Interface()
+	switch v := iv.(type) {
+	case *datastore.Value_BooleanValue:
+		pbValue.Kind = &structpb.Value_BoolValue{BoolValue: v.BooleanValue}
+	case *datastore.Value_StringValue:
+		pbValue.Kind = &structpb.Value_StringValue{StringValue: v.StringValue}
+	case *datastore.Value_DoubleValue:
+		pbValue.Kind = &structpb.Value_NumberValue{NumberValue: v.DoubleValue}
+	case *datastore.Value_NullValue:
+		pbValue.Kind = &structpb.Value_NullValue{}
+	case *datastore.Value_EntityValue:
+		pbValue.Kind = &structpb.Value_StructValue{}
+	case *datastore.Value_ArrayValue:
+		values := make([]*structpb.Value, 0)
+		for _, val := range v.ArrayValue.Values {
+			values = append(values, fromDatastoreValueToStructValue(val))
+		}
+		pbValue.Kind = &structpb.Value_ListValue{
+			ListValue: &structpb.ListValue{
+				Values: values,
+			},
+		}
 	}
 	return pbValue
 }

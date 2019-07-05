@@ -58,6 +58,17 @@ func TestFullyPopulatedModel(t *testing.T) {
 				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
 				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
+				"struct-key-list": {Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{Kind: &structpb.Value_NumberValue{NumberValue: 10}},
+							{Kind: &structpb.Value_StringValue{StringValue: "hello, world"}},
+							{Kind: &structpb.Value_BoolValue{BoolValue: true}},
+							{Kind: &structpb.Value_NumberValue{NumberValue: 200}},
+						},
+					},
+				},
+				},
 			},
 		},
 		TimestampKey: ptypes.TimestampNow(),
@@ -98,6 +109,9 @@ func TestFullyPopulatedModel(t *testing.T) {
 
 	//assert google.protobuf.timestamp
 	assert.DeepEqual(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
+
+	//assert listvalues inside the struct
+	assert.DeepEqual(t, srcProto.GetStructKey().Fields["struct-key-list"].GetListValue(), dstProto.GetStructKey().Fields["struct-key-list"].GetListValue())
 }
 
 func TestPartialModel(t *testing.T) {
@@ -140,58 +154,57 @@ func TestPMtoDE(t *testing.T) {
 	log.Println(entity)
 }
 
-func TestFromStructValueDatastoreValue(t *testing.T) {
+func TestStructValueDatastoreValue(t *testing.T) {
 	tests := []struct {
-		input  *structpb.Value
-		output *datastore.Value
+		structValue    *structpb.Value
+		datastoreValue *datastore.Value
 	}{
 		{
-			input: &structpb.Value{
+			structValue: &structpb.Value{
 				Kind: &structpb.Value_StringValue{
 					StringValue: "some random string key for testing.",
 				},
 			},
-			output: &datastore.Value{
+			datastoreValue: &datastore.Value{
 				ValueType: &datastore.Value_StringValue{
 					StringValue: "some random string key for testing.",
 				},
 			},
 		},
 		{
-			input: &structpb.Value{
+			structValue: &structpb.Value{
 				Kind: &structpb.Value_BoolValue{
 					BoolValue: true,
 				},
 			},
-			output: &datastore.Value{
+			datastoreValue: &datastore.Value{
 				ValueType: &datastore.Value_BooleanValue{
 					BooleanValue: true,
 				},
 			},
 		},
 		{
-			input: &structpb.Value{
+			structValue: &structpb.Value{
 				Kind: &structpb.Value_NumberValue{
 					NumberValue: 15,
 				},
 			},
-			output: &datastore.Value{
+			datastoreValue: &datastore.Value{
 				ValueType: &datastore.Value_DoubleValue{
 					DoubleValue: float64(15),
 				},
 			},
 		},
 		{
-			input: &structpb.Value{
+			structValue: &structpb.Value{
 				Kind: &structpb.Value_NullValue{},
 			},
-			output: &datastore.Value{
+			datastoreValue: &datastore.Value{
 				ValueType: &datastore.Value_NullValue{},
 			},
 		},
-		// TODO TDD not ready for nested list and struct yet
-		/*{
-			input: &structpb.Value{
+		{
+			structValue: &structpb.Value{
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
 						Values: []*structpb.Value{
@@ -203,7 +216,7 @@ func TestFromStructValueDatastoreValue(t *testing.T) {
 					},
 				},
 			},
-			output: &datastore.Value{
+			datastoreValue: &datastore.Value{
 				ValueType: &datastore.Value_ArrayValue{
 					ArrayValue: &datastore.ArrayValue{
 						Values: []*datastore.Value{
@@ -216,8 +229,9 @@ func TestFromStructValueDatastoreValue(t *testing.T) {
 				},
 			},
 		},
-		{
-			input: &structpb.Value{
+		// TODO TDD not ready for nested list and struct yet
+		/*{
+			structValue: &structpb.Value{
 				Kind: &structpb.Value_StructValue{
 					StructValue: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
@@ -231,7 +245,7 @@ func TestFromStructValueDatastoreValue(t *testing.T) {
 					},
 				},
 			},
-			output: &datastore.Value{
+			datastoreValue: &datastore.Value{
 				ValueType: &datastore.Value_EntityValue{
 					EntityValue: &datastore.Entity{
 						Properties: map[string]*datastore.Value{
@@ -248,7 +262,11 @@ func TestFromStructValueDatastoreValue(t *testing.T) {
 		},*/
 	}
 	for _, test := range tests {
-		actualPBValue := fromStructValueDatastoreValue(test.input)
-		assert.DeepEqual(t, test.output, actualPBValue)
+		actualDatastoreValue := fromStructValueToDatastoreValue(test.structValue)
+		assert.DeepEqual(t, test.datastoreValue, actualDatastoreValue)
+		// test the other way around now
+
+		actualStructValue := fromDatastoreValueToStructValue(test.datastoreValue)
+		assert.DeepEqual(t, test.structValue, actualStructValue)
 	}
 }
