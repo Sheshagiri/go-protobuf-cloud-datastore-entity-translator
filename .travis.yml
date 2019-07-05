@@ -5,6 +5,10 @@ go:
 
 os: linux
 dist: trusty
+  apt:
+    packages:
+    - google-cloud-sdk
+
 sudo: false
 
 branches:
@@ -16,12 +20,11 @@ notifications:
     on_success: change
     on_failure: always
 
-before_install:
-  - ./scripts/run-datastore-emulator.sh
-  - export DATASTORE_EMULATOR_HOST=127.0.0.1:8081
-  - export DATASTORE_PROJECT_ID=st2-saas-prototype-dev
-
 install: true
+
+before_script:
+  - gcloud beta emulators datastore start &
+  - $(gcloud beta emulators datastore env-init)
 
 script:
   - cd translator
