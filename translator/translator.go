@@ -10,7 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	datastore "google.golang.org/genproto/googleapis/datastore/v1"
+	"google.golang.org/genproto/googleapis/datastore/v1"
 	"regexp"
 )
 
@@ -171,7 +171,10 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 			size := fValue.Len()
 			values := make([]*datastore.Value, 0)
 			for i := 0; i < size; i++ {
-				val, _ := toDatastoreValue(fValue.Index(i))
+				val, err := toDatastoreValue(fValue.Index(i))
+				if err != nil {
+					return nil, err
+				}
 				values = append(values, val)
 			}
 			value.ValueType = &datastore.Value_ArrayValue{
@@ -216,12 +219,12 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 		case *structpb.Value:
 			value = fromStructValueToDatastoreValue(v)
 		default:
-			errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
+			errString := fmt.Sprintf("[toDatastoreValue]: datatype[%s] not supported", fValue.Type().String())
 			log.Println(errString)
 			err = errors.New(errString)
 		}
 	default:
-		errString := fmt.Sprintf("datatype[%s] not supported", fValue.Type().String())
+		errString := fmt.Sprintf("[toDatastoreValue]: datatype[%s] not supported", fValue.Type().String())
 		log.Println(errString)
 		err = errors.New(errString)
 	}
@@ -257,10 +260,17 @@ func fromStructValueToDatastoreValue(v *structpb.Value) *datastore.Value {
 				Values: values,
 			},
 		}
-		/*case *structpb.Value_StructValue:
+	case *structpb.Value_StructValue:
+		structValue := v.GetStructValue()
+		properties := make(map[string]*datastore.Value, 0)
+		for key, value := range structValue.GetFields() {
+			properties[key] = fromStructValueToDatastoreValue(value)
+		}
 		pbValue.ValueType = &datastore.Value_EntityValue{
-			EntityValue:v.GetStructValue(),
-		}*/
+			EntityValue: &datastore.Entity{
+				Properties: properties,
+			},
+		}
 	}
 	return pbValue
 }
@@ -278,7 +288,16 @@ func fromDatastoreValueToStructValue(v *datastore.Value) *structpb.Value {
 	case *datastore.Value_NullValue:
 		pbValue.Kind = &structpb.Value_NullValue{}
 	case *datastore.Value_EntityValue:
-		pbValue.Kind = &structpb.Value_StructValue{}
+		entityValue := v.EntityValue
+		fields := make(map[string]*structpb.Value)
+		for key, value := range entityValue.GetProperties() {
+			fields[key] = fromDatastoreValueToStructValue(value)
+		}
+		pbValue.Kind = &structpb.Value_StructValue{
+			StructValue: &structpb.Struct{
+				Fields: fields,
+			},
+		}
 	case *datastore.Value_ArrayValue:
 		values := make([]*structpb.Value, 0)
 		for _, val := range v.ArrayValue.Values {

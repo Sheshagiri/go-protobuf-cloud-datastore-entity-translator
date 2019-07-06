@@ -5,7 +5,7 @@ import (
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
-	datastore "google.golang.org/genproto/googleapis/datastore/v1"
+	"google.golang.org/genproto/googleapis/datastore/v1"
 	"gotest.tools/assert"
 	"log"
 	"testing"
@@ -141,6 +141,11 @@ func TestUnSupportedTypes(t *testing.T) {
 		Uint32Key: uint32(10),
 	}
 	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	assert.Error(t, err, "[toDatastoreValue]: datatype[uint32] not supported")
+
+	dstProto := &unsupported.Model{}
+	datastoreEntity := &datastore.Entity{}
+	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, false)
 	assert.Error(t, err, "datatype[uint32] not supported")
 }
 
@@ -229,8 +234,7 @@ func TestStructValueDatastoreValue(t *testing.T) {
 				},
 			},
 		},
-		// TODO TDD not ready for nested list and struct yet
-		/*{
+		{
 			structValue: &structpb.Value{
 				Kind: &structpb.Value_StructValue{
 					StructValue: &structpb.Struct{
@@ -259,7 +263,7 @@ func TestStructValueDatastoreValue(t *testing.T) {
 					},
 				},
 			},
-		},*/
+		},
 	}
 	for _, test := range tests {
 		actualDatastoreValue := fromStructValueToDatastoreValue(test.structValue)
@@ -269,4 +273,21 @@ func TestStructValueDatastoreValue(t *testing.T) {
 		actualStructValue := fromDatastoreValueToStructValue(test.datastoreValue)
 		assert.DeepEqual(t, test.structValue, actualStructValue)
 	}
+}
+
+func TestProtoWithCustomImport(t *testing.T) {
+	srcProto := &example.ExampleDBModel{
+		ComplexArrayKey: []*example.ExampleNestedModel{
+			{
+				Int32Key:  0,
+				StringKey: "string from second element",
+			},
+			{
+				Int32Key:  1,
+				StringKey: "string in second element",
+			},
+		},
+	}
+	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	assert.Error(t, err, "[toDatastoreValue]: datatype[*example.ExampleNestedModel] not supported")
 }
