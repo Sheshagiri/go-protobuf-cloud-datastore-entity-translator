@@ -84,6 +84,15 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 							array[k] = int32(v.GetIntegerValue())
 						}
 						dstValues.Field(i).Set(reflect.ValueOf(array))
+					case reflect.Ptr:
+						for _, value := range fValue.GetArrayValue().GetValues(){
+							fmt.Println("++++++++++")
+							fmt.Println(value.GetEntityValue())
+							typ := dstValues.Type().Field(i).Type.Elem()
+							proto := reflect.New(typ).Elem().Interface().(proto.Message)
+							err = DatastoreEntityToProtoMessage(value.GetEntityValue(),proto, true)
+							fmt.Println("++++++++++")
+						}
 					}
 				}
 			case reflect.Map:
@@ -129,6 +138,7 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 							s.Fields = m
 							dstValues.Field(i).Set(reflect.ValueOf(s))
 						}
+
 					}
 				}
 			default:
@@ -199,29 +209,42 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 			EntityValue: entity,
 		}
 	case reflect.Ptr:
-		iv := fValue.Interface()
-		switch v := iv.(type) {
-		case *structpb.Struct:
-			properties := make(map[string]*datastore.Value)
-			for key, value := range v.Fields {
-				properties[key] = fromStructValueToDatastoreValue(value)
+		if !fValue.IsNil() && fValue.IsValid() {
+			iv := fValue.Interface()
+			switch v := iv.(type) {
+			case *structpb.Struct:
+				properties := make(map[string]*datastore.Value)
+				for key, value := range v.Fields {
+					properties[key] = fromStructValueToDatastoreValue(value)
+				}
+				value.ValueType = &datastore.Value_EntityValue{
+					EntityValue: &datastore.Entity{
+						Properties: properties,
+					},
+				}
+			case *timestamp.Timestamp:
+				ts := fValue.Interface().(*timestamp.Timestamp)
+				value.ValueType = &datastore.Value_TimestampValue{
+					TimestampValue: ts,
+				}
+			case *structpb.Value:
+				value = fromStructValueToDatastoreValue(v)
+			default:
+				// translate any imported protobuf's that we defined ourself
+				if !fValue.IsNil() && fValue.IsValid() {
+					if importedProto, ok := reflect.ValueOf(fValue.Interface()).Interface().(proto.Message); ok {
+						entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto,true)
+						if err != nil {
+							return nil, err
+						}
+						value.ValueType = &datastore.Value_EntityValue{
+							EntityValue: &datastore.Entity{
+								Properties: entityOfImportedProto.Properties,
+							},
+						}
+					}
+				}
 			}
-			value.ValueType = &datastore.Value_EntityValue{
-				EntityValue: &datastore.Entity{
-					Properties: properties,
-				},
-			}
-		case *timestamp.Timestamp:
-			ts := fValue.Interface().(*timestamp.Timestamp)
-			value.ValueType = &datastore.Value_TimestampValue{
-				TimestampValue: ts,
-			}
-		case *structpb.Value:
-			value = fromStructValueToDatastoreValue(v)
-		default:
-			errString := fmt.Sprintf("[toDatastoreValue]: datatype[%s] not supported", fValue.Type().String())
-			log.Println(errString)
-			err = errors.New(errString)
 		}
 	default:
 		errString := fmt.Sprintf("[toDatastoreValue]: datatype[%s] not supported", fValue.Type().String())

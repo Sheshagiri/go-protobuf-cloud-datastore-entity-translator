@@ -9,6 +9,9 @@ import (
 	"gotest.tools/assert"
 	"log"
 	"testing"
+	"reflect"
+	"fmt"
+	"github.com/golang/protobuf/proto"
 )
 
 func TestNestedModel(t *testing.T) {
@@ -279,15 +282,113 @@ func TestProtoWithCustomImport(t *testing.T) {
 	srcProto := &example.ExampleDBModel{
 		ComplexArrayKey: []*example.ExampleNestedModel{
 			{
-				Int32Key:  0,
-				StringKey: "string from second element",
+				Int32Key:  1,
+				StringKey: "string in first element",
 			},
 			{
-				Int32Key:  1,
+				Int32Key:  2,
 				StringKey: "string in second element",
 			},
 		},
 	}
-	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
-	assert.Error(t, err, "[toDatastoreValue]: datatype[*example.ExampleNestedModel] not supported")
+	_ = []*datastore.Value{
+		{
+			ValueType:&datastore.Value_EntityValue{
+				EntityValue:&datastore.Entity{
+					Properties:map[string]*datastore.Value{
+						"string_key": {ValueType: &datastore.Value_StringValue{StringValue:"string in first element"}},
+						"int32_key": {ValueType:&datastore.Value_IntegerValue{IntegerValue:1}},
+					},
+				},
+			},
+		},
+		{
+			ValueType:&datastore.Value_EntityValue{
+				EntityValue:&datastore.Entity{
+					Properties:map[string]*datastore.Value{
+						"string_key": {ValueType: &datastore.Value_StringValue{StringValue:"string in second element"}},
+						"int32_key": {ValueType:&datastore.Value_IntegerValue{IntegerValue:2}},
+					},
+				},
+			},
+		},
+	}
+	//arrayValues, err := toDatastoreValue(reflect.ValueOf(srcProto).Elem().FieldByName("ComplexArrayKey"))
+	//assert.NilError(t,err)
+	//assert.DeepEqual(t, values, arrayValues.GetArrayValue().Values)
+
+	//test full round trip as well
+
+	datastoreEntity, _ := ProtoMessageToDatastoreEntity(srcProto, true)
+	//assert.NilError(t, err)
+
+	dstProto := &example.ExampleDBModel{}
+	DatastoreEntityToProtoMessage(&datastoreEntity, dstProto, true)
+	//assert.NilError(t, err)
+
+	//make sure both protobuf's are identical
+	//assert.DeepEqual(t, srcProto, dstProto)
+}
+
+func TestImportedProtoMessages(t *testing.T) {
+	dst := &example.ExampleDBModel{}
+	/*nm := &example.ExampleNestedModel{
+		StringKey:"sring",
+		Int32Key:32,
+	}*/
+	dstValues := reflect.ValueOf(dst).Elem()
+	for i := 0; i < dstValues.NumField(); i++ {
+		fName := dstValues.Type().Field(i).Name
+		//value := dstValues.Type().Field(i)
+		if fName == "ComplexArrayKey" {
+			fmt.Println("original: ",dstValues.Type().Field(i).Type.Elem())
+			nnm := reflect.New(dstValues.Type().Field(i).Type.Elem())
+			v := reflect.Indirect(nnm).Interface()
+			vv := reflect.ValueOf(v).Elem()
+			vv.FieldByName("StringKey").SetString("this is a string value")
+			fmt.Println(nnm.Elem().Interface())
+			/*fmt.Println("-------------")
+			nm := reflect.New(typ)
+			nmInterface := nm.Interface()
+			//nmValue := nmPointer.Elem()
+			DEtoPM(&nmInterface)
+			fmt.Println("-------------")*/
+		}
+	}
+}
+
+func MakeStruct() interface{} {
+	var sfs []reflect.StructField
+	sfs = append(sfs, reflect.StructField{
+		Name:"StringKey",
+		Type:reflect.TypeOf("string"),
+	})
+	st := reflect.StructOf(sfs)
+	so := reflect.New(st)
+	return so.Interface()
+}
+
+func deToPm(src proto.Message) {
+	srcValues := reflect.ValueOf(src).Elem()
+	fmt.Println(srcValues.NumField())
+}
+
+func DEtoPM(dst *interface{}) {
+	dstValues := reflect.ValueOf(dst).Elem()
+	//fields := dstValues.Type()
+	//fmt.Println(dst.Type().Elem().NumField())
+	for i:=0;i<dstValues.NumField();i++{
+		fmt.Println(dstValues.Type().Field(i).Name)
+		//fmt.Println(fields.Field(i).Type)
+	}
+}
+
+func TestAnotherAttempt(t *testing.T) {
+	nm := &example.ExampleNestedModel{}
+	fmt.Println("original: ",reflect.ValueOf(nm).Type().Elem())
+	nnm := reflect.New(reflect.ValueOf(nm).Type().Elem())
+	fmt.Println("new: ",reflect.ValueOf(nm).Type().Elem())
+	//nnmp := reflect.ValueOf(nnm)
+	nnm.Elem().FieldByName("StringKey").SetString("this is a string value")
+	fmt.Println(nnm.Elem().Interface())
 }
