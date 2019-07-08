@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	cd "cloud.google.com/go/datastore"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -341,4 +342,13 @@ func toSnakeCase(name string) string {
 	snake := matchFirstCap.ReplaceAllString(name, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
+}
+
+func DEtoPM(src *datastore.Entity, dst interface{}) {
+	entity, err := cd.DatastoreStoreProtoToEntity(src)
+	fmt.Println("entity: ", entity)
+	fmt.Println("err: ", err)
+	err = cd.LoadEntityToStruct(dst, entity)
+	fmt.Println(err)
+	fmt.Println(dst)
 }

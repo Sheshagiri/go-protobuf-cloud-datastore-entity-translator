@@ -372,7 +372,7 @@ func deToPm(src proto.Message) {
 	srcValues := reflect.ValueOf(src).Elem()
 	fmt.Println(srcValues.NumField())
 }
-
+/*
 func DEtoPM(dst *interface{}) {
 	dstValues := reflect.ValueOf(dst).Elem()
 	//fields := dstValues.Type()
@@ -381,7 +381,7 @@ func DEtoPM(dst *interface{}) {
 		fmt.Println(dstValues.Type().Field(i).Name)
 		//fmt.Println(fields.Field(i).Type)
 	}
-}
+}*/
 
 func TestAnotherAttempt(t *testing.T) {
 	nm := &example.ExampleNestedModel{}

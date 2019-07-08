@@ -470,6 +470,46 @@ func (s structPLS) Load(props []Property) error {
 	return nil
 }
 
+func DatastoreStoreProtoToEntity(src *pb.Entity) (*Entity, error) {
+	props := make([]Property, 0, len(src.Properties))
+	for name, val := range src.Properties {
+		v, err := propToValue(val)
+		if err != nil {
+			return nil, err
+		}
+		props = append(props, Property{
+			Name:    name,
+			Value:   v,
+			NoIndex: val.ExcludeFromIndexes,
+		})
+	}
+	var key *Key
+	if src.Key != nil {
+		// Ignore any error, since nested entity values
+		// are allowed to have an invalid key.
+		key, _ = protoToKey(src.Key)
+	}
+
+	return &Entity{key, props}, nil
+}
+
+func LoadEntityToStruct(dst interface{}, ent *Entity) error {
+	pls, err := newStructPLS(dst)
+	if err != nil {
+		return err
+	}
+
+	// Try and load key.
+	keyField := pls.codec.Match(keyFieldName)
+	if keyField != nil && ent.Key != nil {
+		pls.v.FieldByIndex(keyField.Index).Set(reflect.ValueOf(ent.Key))
+	}
+
+	// Load properties.
+	return pls.Load(ent.Properties)
+}
+
+
 func protoToEntity(src *pb.Entity) (*Entity, error) {
 	props := make([]Property, 0, len(src.Properties))
 	for name, val := range src.Properties {

@@ -3,3 +3,12 @@ syntax="proto3";
 message Model{
     uint32 uint32_key=1;
 }
+
+message Parent {
+    string name=1;
+}
+
+message Child {
+    Parent parent=1;
+    string name=2;
+}
