@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a308940e003e923518a23b3be7c25083bbfe3e307da29a7e89b634347606ad9c"
+  digest = "1:afa5db1a1eed970c3a7adc593bb0c807fadba33bdebaf79ac543f8ec8359c8be"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
@@ -15,7 +15,7 @@
     "internal/version",
   ]
   pruneopts = "UT"
-  revision = "0b804bdd6c86a88ebdf3fdfd5975714bce6d4c9e"
+  revision = "fa10c58b97b29239c8d3afa4a8ba712e9247e341"
   source = "github.com/Sheshagiri/google-cloud-go"
 
 [[projects]]

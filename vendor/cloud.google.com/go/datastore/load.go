@@ -17,10 +17,12 @@ package datastore
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+
 	"cloud.google.com/go/internal/fields"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 )
 
@@ -338,15 +340,10 @@ func setVal(v reflect.Value, p Property) (s string) {
 			v.Elem().SetString(x)
 		case GeoPoint:
 			v.Elem().Set(reflect.ValueOf(x))
-		case *pb.Value_TimestampValue:
-			fmt.Println("-------")
-			fmt.Println("inside time.Time")
-			fmt.Println("-------")
-			//v.Elem().Set(reflect.ValueOf(x.TimestampValue))
 		case *timestamp.Timestamp:
 			ts := timestamp.Timestamp{
-				Seconds:x.Seconds,
-				Nanos:x.Nanos,
+				Seconds: x.Seconds,
+				Nanos:   x.Nanos,
 			}
 			v.Elem().Set(reflect.ValueOf(ts))
 		default:
@@ -562,12 +559,15 @@ func EntityToStruct(dst interface{}, ent *Entity) error {
 }
 
 // ProtoToEntity will convert the Entity from low level datastore Entity to Entity defined in this sdk.
-func ProtoToEntity(src *pb.Entity) (*Entity, error) {
+func ProtoToEntity(src *pb.Entity, snakeCase bool) (*Entity, error) {
 	props := make([]Property, 0, len(src.Properties))
 	for name, val := range src.Properties {
 		v, err := propToValue(val)
 		if err != nil {
 			return nil, err
+		}
+		if snakeCase {
+			name = toCamelCase(name)
 		}
 		props = append(props, Property{
 			Name:    name,
@@ -583,4 +583,11 @@ func ProtoToEntity(src *pb.Entity) (*Entity, error) {
 	}
 
 	return &Entity{key, props}, nil
+}
+
+func toCamelCase(name string) string {
+	reg := regexp.MustCompile("(^[A-Za-z])|_([A-Za-z])")
+	return reg.ReplaceAllStringFunc(name, func(s string) string {
+		return strings.ToUpper(strings.Replace(s, "_", "", -1))
+	})
 }

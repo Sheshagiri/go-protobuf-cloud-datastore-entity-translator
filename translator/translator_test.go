@@ -24,7 +24,7 @@ func TestNestedModel(t *testing.T) {
 	// make sure there is no error
 	assert.NilError(t, err)
 
-	assert.Equal(t, srcProto.GetStringKey(), dstProto.GetStringKey())
+	assert.DeepEqual(t, srcProto.GetStringKey(), dstProto.GetStringKey())
 }
 
 func TestFullyPopulatedModel(t *testing.T) {
@@ -142,11 +142,6 @@ func TestUnSupportedTypes(t *testing.T) {
 	}
 	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
 	assert.Error(t, err, "[toDatastoreValue]: datatype[uint32] not supported")
-
-	dstProto := &unsupported.Model{}
-	datastoreEntity := &datastore.Entity{}
-	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, false)
-	assert.Error(t, err, "datatype[uint32] not supported")
 }
 
 func TestPMtoDE(t *testing.T) {

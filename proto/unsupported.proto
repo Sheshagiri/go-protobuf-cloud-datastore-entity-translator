@@ -1,6 +1,7 @@
 syntax="proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 
 message Model{
     uint32 uint32_key=1;
@@ -8,4 +9,8 @@ message Model{
 
 message TS {
     google.protobuf.Timestamp StartedOn=1;
+}
+
+message StructMessage {
+    google.protobuf.Struct StructKey = 1;
 }
