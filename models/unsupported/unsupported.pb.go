@@ -59,18 +59,109 @@ func (m *Model) GetUint32Key() uint32 {
 	return 0
 }
 
+type Parent struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Parent) Reset()         { *m = Parent{} }
+func (m *Parent) String() string { return proto.CompactTextString(m) }
+func (*Parent) ProtoMessage()    {}
+func (*Parent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86386df630750539, []int{1}
+}
+
+func (m *Parent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Parent.Unmarshal(m, b)
+}
+func (m *Parent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Parent.Marshal(b, m, deterministic)
+}
+func (m *Parent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Parent.Merge(m, src)
+}
+func (m *Parent) XXX_Size() int {
+	return xxx_messageInfo_Parent.Size(m)
+}
+func (m *Parent) XXX_DiscardUnknown() {
+	xxx_messageInfo_Parent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Parent proto.InternalMessageInfo
+
+func (m *Parent) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type Child struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Parent               *Parent  `protobuf:"bytes,2,opt,name=parent,proto3" json:"parent,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Child) Reset()         { *m = Child{} }
+func (m *Child) String() string { return proto.CompactTextString(m) }
+func (*Child) ProtoMessage()    {}
+func (*Child) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86386df630750539, []int{2}
+}
+
+func (m *Child) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Child.Unmarshal(m, b)
+}
+func (m *Child) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Child.Marshal(b, m, deterministic)
+}
+func (m *Child) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Child.Merge(m, src)
+}
+func (m *Child) XXX_Size() int {
+	return xxx_messageInfo_Child.Size(m)
+}
+func (m *Child) XXX_DiscardUnknown() {
+	xxx_messageInfo_Child.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Child proto.InternalMessageInfo
+
+func (m *Child) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Child) GetParent() *Parent {
+	if m != nil {
+		return m.Parent
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Model)(nil), "Model")
+	proto.RegisterType((*Parent)(nil), "Parent")
+	proto.RegisterType((*Child)(nil), "Child")
 }
 
 func init() { proto.RegisterFile("unsupported.proto", fileDescriptor_86386df630750539) }
 
 var fileDescriptor_86386df630750539 = []byte{
-	// 84 bytes of a gzipped FileDescriptorProto
+	// 140 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0xcd, 0x2b, 0x2e,
 	0x2d, 0x28, 0xc8, 0x2f, 0x2a, 0x49, 0x4d, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x57, 0x52, 0xe3,
 	0x62, 0xf5, 0xcd, 0x4f, 0x49, 0xcd, 0x11, 0x92, 0xe5, 0xe2, 0x2a, 0xcd, 0xcc, 0x2b, 0x31, 0x36,
 	0x8a, 0xcf, 0x4e, 0xad, 0x94, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0d, 0xe2, 0x84, 0x88, 0x78, 0xa7,
-	0x56, 0x26, 0xb1, 0x81, 0x95, 0x1b, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x9a, 0xf2, 0x8b, 0x02,
-	0x43, 0x00, 0x00, 0x00,
+	0x56, 0x2a, 0xc9, 0x70, 0xb1, 0x05, 0x24, 0x16, 0xa5, 0xe6, 0x95, 0x08, 0x09, 0x71, 0xb1, 0xe4,
+	0x25, 0xe6, 0xa6, 0x82, 0x95, 0x70, 0x06, 0x81, 0xd9, 0x4a, 0x36, 0x5c, 0xac, 0xce, 0x19, 0x99,
+	0x39, 0x29, 0xd8, 0x24, 0x85, 0xe4, 0xb9, 0xd8, 0x0a, 0xc0, 0x5a, 0x25, 0x98, 0x14, 0x18, 0x35,
+	0xb8, 0x8d, 0xd8, 0xf5, 0x20, 0x26, 0x05, 0x41, 0x85, 0x93, 0xd8, 0xc0, 0x4e, 0x31, 0x06, 0x04,
+	0x00, 0x00, 0xff, 0xff, 0x51, 0x94, 0xde, 0x30, 0x9f, 0x00, 0x00, 0x00,
 }

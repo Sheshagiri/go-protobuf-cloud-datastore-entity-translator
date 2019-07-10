@@ -16,9 +16,11 @@ package datastore
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
+	"regexp"
 
 	"cloud.google.com/go/internal/fields"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
@@ -29,6 +31,7 @@ var (
 	typeOfTime      = reflect.TypeOf(time.Time{})
 	typeOfGeoPoint  = reflect.TypeOf(GeoPoint{})
 	typeOfKeyPtr    = reflect.TypeOf(&Key{})
+	typeOfTimestamp = reflect.TypeOf(pb.Value_TimestampValue{})
 )
 
 // typeMismatchReason returns a string explaining why the property p could not
@@ -292,6 +295,9 @@ func setVal(v reflect.Value, p Property) (s string) {
 			return overflowReason(x, v)
 		}
 		v.SetFloat(x)
+	case reflect.Map:
+		// TODO [Sheshagiri]: support this later when the need raises
+		log.Println("maps are not supported yet and will not be unmarshalled into the struct.")
 	case reflect.Ptr:
 		// v must be a pointer to either a Key, an Entity, or one of the supported basic types.
 		if v.Type() != typeOfKeyPtr && v.Type().Elem().Kind() != reflect.Struct && !isValidPointerType(v.Type().Elem()) {
@@ -313,6 +319,13 @@ func setVal(v reflect.Value, p Property) (s string) {
 			v.Set(reflect.ValueOf(x))
 			return ""
 		}
+
+		if x, ok := v.Interface().(*pb.Value_TimestampValue); ok {
+			fmt.Println("inside timestamp")
+			v.Set(reflect.ValueOf(x.TimestampValue))
+			return ""
+		}
+
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
@@ -322,6 +335,8 @@ func setVal(v reflect.Value, p Property) (s string) {
 			if err != nil {
 				return err.Error()
 			}
+		case *pb.Value_TimestampValue:
+			fmt.Println("inside timestamp")
 		case int64:
 			if v.Elem().OverflowInt(x) {
 				return overflowReason(x, v.Elem())
@@ -506,7 +521,8 @@ func propToValue(v *pb.Value) (interface{}, error) {
 	case *pb.Value_DoubleValue:
 		return v.DoubleValue, nil
 	case *pb.Value_TimestampValue:
-		return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
+		return v.TimestampValue, nil
+		//return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
 	case *pb.Value_KeyValue:
 		return protoToKey(v.KeyValue)
 	case *pb.Value_StringValue:
@@ -536,8 +552,14 @@ func propToValue(v *pb.Value) (interface{}, error) {
 func EntityToStruct(dst interface{}, ent *Entity) error {
 	pls, err := newStructPLS(dst)
 	if err != nil {
+		fmt.Println("-----------------")
+		fmt.Println(err)
+		fmt.Println("-----------------")
 		return err
 	}
+	fmt.Println("##############")
+	fmt.Println(pls.codec)
+	fmt.Println("##############")
 
 	// Try and load key.
 	keyField := pls.codec.Match(keyFieldName)
@@ -550,12 +572,15 @@ func EntityToStruct(dst interface{}, ent *Entity) error {
 }
 
 // ProtoToEntity will convert the Entity from low level datastore Entity to Entity defined in this sdk.
-func ProtoToEntity(src *pb.Entity) (*Entity, error) {
+func ProtoToEntity(src *pb.Entity, snakeCase bool) (*Entity, error) {
 	props := make([]Property, 0, len(src.Properties))
 	for name, val := range src.Properties {
 		v, err := propToValue(val)
 		if err != nil {
 			return nil, err
+		}
+		if snakeCase {
+			name = toCamelCase(name)
 		}
 		props = append(props, Property{
 			Name:    name,
@@ -571,4 +596,12 @@ func ProtoToEntity(src *pb.Entity) (*Entity, error) {
 	}
 
 	return &Entity{key, props}, nil
+}
+
+
+func toCamelCase(input string) string {
+	regex := regexp.MustCompile("(^[A-Za-z])|_([A-Za-z])")
+	return regex.ReplaceAllStringFunc(input, func(s string) string {
+		return strings.ToUpper(strings.Replace(s, "_", "", -1))
+	})
 }
