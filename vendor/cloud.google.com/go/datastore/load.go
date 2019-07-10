@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
-
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	"cloud.google.com/go/internal/fields"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 )
@@ -336,8 +336,19 @@ func setVal(v reflect.Value, p Property) (s string) {
 			v.Elem().SetBool(x)
 		case string:
 			v.Elem().SetString(x)
-		case GeoPoint, time.Time:
+		case GeoPoint:
 			v.Elem().Set(reflect.ValueOf(x))
+		case *pb.Value_TimestampValue:
+			fmt.Println("-------")
+			fmt.Println("inside time.Time")
+			fmt.Println("-------")
+			//v.Elem().Set(reflect.ValueOf(x.TimestampValue))
+		case *timestamp.Timestamp:
+			ts := timestamp.Timestamp{
+				Seconds:x.Seconds,
+				Nanos:x.Nanos,
+			}
+			v.Elem().Set(reflect.ValueOf(ts))
 		default:
 			return typeMismatchReason(p, v)
 		}
@@ -506,7 +517,8 @@ func propToValue(v *pb.Value) (interface{}, error) {
 	case *pb.Value_DoubleValue:
 		return v.DoubleValue, nil
 	case *pb.Value_TimestampValue:
-		return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
+		//return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
+		return v.TimestampValue, nil
 	case *pb.Value_KeyValue:
 		return protoToKey(v.KeyValue)
 	case *pb.Value_StringValue:

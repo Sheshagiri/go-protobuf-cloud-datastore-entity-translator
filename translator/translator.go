@@ -12,6 +12,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/genproto/googleapis/datastore/v1"
 	"regexp"
+
+	clientSDK "cloud.google.com/go/datastore"
 )
 
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
@@ -41,103 +43,13 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity da
 
 // DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
 func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, snakeCase bool) (err error) {
-	dstValues := reflect.ValueOf(dst).Elem()
-	for i := 0; i < dstValues.NumField(); i++ {
-		fName := dstValues.Type().Field(i).Name
-		if !strings.Contains(fName, "XXX_") {
-			keyName := fName
-			if snakeCase {
-				keyName = toSnakeCase(fName)
-			}
-			fValue := src.Properties[keyName]
-			fType := dstValues.Type().Field(i).Type.Kind()
-			log.Printf("name: %s, type: %s\n", fName, fType)
-			switch fType {
-			case reflect.Bool:
-				dstValues.Field(i).SetBool(fValue.GetBooleanValue())
-			case reflect.String:
-				dstValues.Field(i).SetString(fValue.GetStringValue())
-			case reflect.Float64, reflect.Float32:
-				dstValues.Field(i).SetFloat(fValue.GetDoubleValue())
-				//since enums are inherently ints handle then specially
-			case reflect.Int64, reflect.Int32:
-				dstValues.Field(i).SetInt(fValue.GetIntegerValue())
-			case reflect.Slice:
-				if dstValues.Type().Field(i).Type.Elem().Kind() == reflect.Uint8 {
-					dstValues.Field(i).SetBytes(fValue.GetBlobValue())
-				} else {
-					// get elements from ArrayValue
-					arrayValues := fValue.GetArrayValue().Values
-					// TODO use type to dynamically make an array and make use of toValue function
-					switch dstValues.Type().Field(i).Type.Elem().Kind() {
-					case reflect.String:
-						array := make([]string, len(arrayValues))
-						for k := 0; k < len(array); k++ {
-							v := arrayValues[k]
-							array[k] = v.GetStringValue()
-						}
-						dstValues.Field(i).Set(reflect.ValueOf(array))
-					case reflect.Int32:
-						array := make([]int32, len(arrayValues))
-						for k := 0; k < len(array); k++ {
-							v := arrayValues[k]
-							array[k] = int32(v.GetIntegerValue())
-						}
-						dstValues.Field(i).Set(reflect.ValueOf(array))
-					}
-				}
-			case reflect.Map:
-				entity := fValue.GetEntityValue()
-				switch dstValues.Type().Field(i).Type.String() {
-				// rudimentary impl, as I can't get hold of the type with Kind() here, look at Indirect() later
-				case "map[string]string":
-					m := make(map[string]string)
-					for key, value := range entity.Properties {
-						m[key] = value.GetStringValue()
-					}
-					dstValues.Field(i).Set(reflect.ValueOf(m))
-				case "map[string]int32":
-					m := make(map[string]int32)
-					for key, value := range entity.Properties {
-						m[key] = int32(value.GetIntegerValue())
-					}
-					dstValues.Field(i).Set(reflect.ValueOf(m))
-				case "map[string]*structpb.Value":
-					m := make(map[string]*structpb.Value)
-					for key, value := range entity.Properties {
-						m[key] = fromDatastoreValueToStructValue(value)
-					}
-					dstValues.Field(i).Set(reflect.ValueOf(m))
-				}
-			case reflect.Ptr:
-				if !reflect.ValueOf(fValue).IsNil() {
-					//switch v := dstValues.Field(i).Interface().(type) {
-					switch v := reflect.ValueOf(fValue.ValueType).Interface().(type) {
-					case *datastore.Value_TimestampValue:
-						if fValue.GetTimestampValue() != nil {
-							dstValues.Field(i).Set(reflect.ValueOf(fValue.GetTimestampValue()))
-						}
-					case *datastore.Value_EntityValue:
-						properties := v.EntityValue.Properties
-						if properties != nil {
-							s := &structpb.Struct{}
-							m := make(map[string]*structpb.Value)
-							for key, value := range properties {
-								log.Printf("value type is: %T", value.ValueType)
-								m[key] = fromDatastoreValueToStructValue(value)
-							}
-							s.Fields = m
-							dstValues.Field(i).Set(reflect.ValueOf(s))
-						}
-					}
-				}
-			default:
-				errString := fmt.Sprintf("datatype[%s] not supported", fType)
-				err = errors.New(errString)
-			}
-		}
+	entity, err := clientSDK.ProtoToEntity(src)
+	if err != nil {
+		return err
 	}
-	return
+
+	err = clientSDK.EntityToStruct(dst, entity)
+	return err
 }
 
 func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {

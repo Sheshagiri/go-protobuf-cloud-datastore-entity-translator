@@ -1,5 +1,11 @@
 syntax="proto3";
 
+import "google/protobuf/timestamp.proto";
+
 message Model{
     uint32 uint32_key=1;
+}
+
+message TS {
+    google.protobuf.Timestamp StartedOn=1;
 }
