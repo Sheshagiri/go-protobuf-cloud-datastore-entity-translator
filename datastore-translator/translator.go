@@ -199,9 +199,20 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 		case *structpb.Value:
 			value = fromStructValueToDatastoreValue(v)
 		default:
-			errString := fmt.Sprintf("[toDatastoreValue]: datatype[%s] not supported", fValue.Type().String())
-			log.Println(errString)
-			err = errors.New(errString)
+			// translate any imported protobuf's that we defined ourself
+			if !fValue.IsNil() && fValue.IsValid() {
+				if importedProto, ok := reflect.ValueOf(fValue.Interface()).Interface().(proto.Message); ok {
+					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, false)
+					if err != nil {
+						return nil, err
+					}
+					value.ValueType = &datastore.Value_EntityValue{
+						EntityValue: &datastore.Entity{
+							Properties: entityOfImportedProto.Properties,
+						},
+					}
+				}
+			}
 		}
 	default:
 		errString := fmt.Sprintf("[toDatastoreValue]: datatype[%s] not supported", fValue.Type().String())

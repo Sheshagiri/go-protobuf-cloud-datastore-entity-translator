@@ -275,7 +275,7 @@ func TestProtoWithCustomImport(t *testing.T) {
 		ComplexArrayKey: []*example.ExampleNestedModel{
 			{
 				Int32Key:  0,
-				StringKey: "string from second element",
+				StringKey: "string in first element",
 			},
 			{
 				Int32Key:  1,
@@ -283,6 +283,42 @@ func TestProtoWithCustomImport(t *testing.T) {
 			},
 		},
 	}
-	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
-	assert.Error(t, err, "[toDatastoreValue]: datatype[*example.ExampleNestedModel] not supported")
+
+	srcEntity := &datastore.Entity{
+		Properties: map[string]*datastore.Value{
+			"ComplexArrayKey": {
+				ValueType: &datastore.Value_ArrayValue{
+					ArrayValue: &datastore.ArrayValue{
+						Values: []*datastore.Value{
+							{
+								ValueType: &datastore.Value_EntityValue{
+									EntityValue: &datastore.Entity{
+										Properties: map[string]*datastore.Value{
+											"Int32Key":  {ValueType: &datastore.Value_IntegerValue{IntegerValue: 0}},
+											"StringKey": {ValueType: &datastore.Value_StringValue{StringValue: "string in first element"}},
+										},
+									},
+								},
+							},
+							{
+								ValueType: &datastore.Value_EntityValue{
+									EntityValue: &datastore.Entity{
+										Properties: map[string]*datastore.Value{
+											"Int32Key":  {ValueType: &datastore.Value_IntegerValue{IntegerValue: 1}},
+											"StringKey": {ValueType: &datastore.Value_StringValue{StringValue: "string in second element"}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	dstEntity, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	assert.NilError(t, err)
+	// our interest here only to compare the ComplexArrayKey
+	assert.DeepEqual(t, srcEntity.GetProperties()["ComplexArrayKey"], dstEntity.GetProperties()["ComplexArrayKey"])
 }

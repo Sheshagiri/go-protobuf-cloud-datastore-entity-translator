@@ -75,9 +75,18 @@ func TestSliceofNestedMessages(t *testing.T) {
 		},
 	}
 	log.Println("Source: ", src)
-	_, err := ProtoMessageToDatastoreEntity(src, false)
-	//slices of nested messages in not suported yet
-	assert.Error(t, err, "[toDatastoreValue]: datatype[*example.ExampleNestedModel] not supported")
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
+	assert.NilError(t, err)
+
+	log.Println("Source Datastore Entity: ", srcEntity)
+
+	dst := &example.ExampleDBModel{}
+
+	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	assert.NilError(t, err)
+	log.Println("Destination: ", dst)
+	assert.DeepEqual(t, src.GetComplexArrayKey(), dst.GetComplexArrayKey())
+
 }
 
 func TestNestedMessages(t *testing.T) {
@@ -89,14 +98,14 @@ func TestNestedMessages(t *testing.T) {
 	}
 	log.Println("Source: ", src)
 	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
-
 	assert.NilError(t, err)
+
 	log.Println("Source Datastore Entity: ", srcEntity)
 
 	dst := &unsupported.Child{}
 
 	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
 	assert.NilError(t, err)
-	log.Println("", dst)
+	log.Println("Destination: ", dst)
 	assert.DeepEqual(t, src, dst)
 }
