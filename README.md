@@ -19,7 +19,9 @@ and it also doesn't expose `Put` and `Get` functions that operate on `datastore.
 Issues that inspired this solution:
 
 https://github.com/googleapis/google-cloud-go/issues/1474
+
 https://github.com/googleapis/google-cloud-go/issues/1489
+
 https://github.com/googleapis/google-cloud-go/issues/680
 
 Following is an example of the same.
