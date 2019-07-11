@@ -341,6 +341,64 @@ func (c *Client) Get(ctx context.Context, key *Key, dst interface{}) (err error)
 	return err
 }
 
+// GetEntity gets the low level google.golang.org/genproto/googleapis/datastore/v1 for the given Key.
+func (c *Client) GetEntity(ctx context.Context, key *Key) (entity *pb.Entity, err error) {
+	ctx = trace.StartSpan(ctx, "cloud.google.com/go/datastore.GetEntity")
+	defer func() { trace.EndSpan(ctx, err) }()
+
+	var pbKey *pb.Key
+	if !key.valid() {
+		return nil, ErrInvalidKey
+	} else if key.Incomplete() {
+		return nil, fmt.Errorf("datastore: can't get the incomplete key: %v", key)
+	} else {
+		pbKey = keyToProto(key)
+	}
+
+	req := &pb.LookupRequest{
+		ProjectId:   c.dataset,
+		Keys:        []*pb.Key{pbKey},
+		ReadOptions: nil,
+	}
+
+	resp, err := c.client.Lookup(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	found := resp.Found
+	missing := resp.Missing
+	// Upper bound 100 iterations to prevent infinite loop.
+	// We choose 100 iterations somewhat logically:
+	// Max number of Entities you can request from Datastore is 1,000.
+	// Max size for a Datastore Entity is 1 MiB.
+	// Max request size is 10 MiB, so we assume max response size is also 10 MiB.
+	// 1,000 / 10 = 100.
+	// Note that if ctx has a deadline, the deadline will probably
+	// be hit before we reach 100 iterations.
+	for i := 0; len(resp.Deferred) > 0 && i < 100; i++ {
+		req.Keys = resp.Deferred
+		resp, err = c.client.Lookup(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		found = append(found, resp.Found...)
+		missing = append(missing, resp.Missing...)
+	}
+
+	// for now we expect only one key
+	if len(found) > 0 {
+		e := found[0]
+		_, err = protoToKey(e.Entity.Key)
+		if err != nil {
+			return nil, errors.New("datastore: internal error: server returned an invalid key")
+		}
+		return e.Entity, nil
+	} else if len(missing) > 0 {
+		return nil, ErrNoSuchEntity
+	}
+	return nil, errors.New("datastore: internal error: server returned the wrong number of entities")
+}
+
 // GetMulti is a batch version of Get.
 //
 // dst must be a []S, []*S, []I or []P, for some struct type S, some interface
@@ -483,6 +541,36 @@ func (c *Client) Put(ctx context.Context, key *Key, src interface{}) (*Key, erro
 		return nil, err
 	}
 	return k[0], nil
+}
+
+// PutEntity saves the low level google.golang.org/genproto/googleapis/datastore/v1 into the datastore with the given Key.
+func (c *Client) PutEntity(ctx context.Context, key *Key, entity *pb.Entity) (*Key, error) {
+	entity.Key = keyToProto(key)
+	var mut *pb.Mutation
+	if key.Incomplete() {
+		mut = &pb.Mutation{Operation: &pb.Mutation_Insert{Insert: entity}}
+	} else {
+		mut = &pb.Mutation{Operation: &pb.Mutation_Upsert{Upsert: entity}}
+	}
+
+	// Make the request.
+	req := &pb.CommitRequest{
+		ProjectId: c.dataset,
+		Mutations: []*pb.Mutation{mut},
+		Mode:      pb.CommitRequest_NON_TRANSACTIONAL,
+	}
+	resp, err := c.client.Commit(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	retKey := make([]*Key, 1)
+	if key.Incomplete() {
+		retKey[0], err = protoToKey(resp.MutationResults[0].Key)
+		if err != nil {
+			return nil, errors.New("datastore: internal error: server returned an invalid key")
+		}
+	}
+	return retKey[0], nil
 }
 
 // PutMulti is a batch version of Put.

@@ -6,6 +6,8 @@ package unsupported
 import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	math "math"
 )
 
@@ -59,18 +61,195 @@ func (m *Model) GetUint32Key() uint32 {
 	return 0
 }
 
+type TS struct {
+	StartedOn            *timestamp.Timestamp `protobuf:"bytes,1,opt,name=StartedOn,proto3" json:"StartedOn,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *TS) Reset()         { *m = TS{} }
+func (m *TS) String() string { return proto.CompactTextString(m) }
+func (*TS) ProtoMessage()    {}
+func (*TS) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86386df630750539, []int{1}
+}
+
+func (m *TS) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TS.Unmarshal(m, b)
+}
+func (m *TS) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TS.Marshal(b, m, deterministic)
+}
+func (m *TS) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TS.Merge(m, src)
+}
+func (m *TS) XXX_Size() int {
+	return xxx_messageInfo_TS.Size(m)
+}
+func (m *TS) XXX_DiscardUnknown() {
+	xxx_messageInfo_TS.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TS proto.InternalMessageInfo
+
+func (m *TS) GetStartedOn() *timestamp.Timestamp {
+	if m != nil {
+		return m.StartedOn
+	}
+	return nil
+}
+
+type StructMessage struct {
+	StructKey            *_struct.Struct `protobuf:"bytes,1,opt,name=StructKey,proto3" json:"StructKey,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *StructMessage) Reset()         { *m = StructMessage{} }
+func (m *StructMessage) String() string { return proto.CompactTextString(m) }
+func (*StructMessage) ProtoMessage()    {}
+func (*StructMessage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86386df630750539, []int{2}
+}
+
+func (m *StructMessage) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StructMessage.Unmarshal(m, b)
+}
+func (m *StructMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StructMessage.Marshal(b, m, deterministic)
+}
+func (m *StructMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StructMessage.Merge(m, src)
+}
+func (m *StructMessage) XXX_Size() int {
+	return xxx_messageInfo_StructMessage.Size(m)
+}
+func (m *StructMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_StructMessage.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StructMessage proto.InternalMessageInfo
+
+func (m *StructMessage) GetStructKey() *_struct.Struct {
+	if m != nil {
+		return m.StructKey
+	}
+	return nil
+}
+
+type Parent struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Parent) Reset()         { *m = Parent{} }
+func (m *Parent) String() string { return proto.CompactTextString(m) }
+func (*Parent) ProtoMessage()    {}
+func (*Parent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86386df630750539, []int{3}
+}
+
+func (m *Parent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Parent.Unmarshal(m, b)
+}
+func (m *Parent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Parent.Marshal(b, m, deterministic)
+}
+func (m *Parent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Parent.Merge(m, src)
+}
+func (m *Parent) XXX_Size() int {
+	return xxx_messageInfo_Parent.Size(m)
+}
+func (m *Parent) XXX_DiscardUnknown() {
+	xxx_messageInfo_Parent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Parent proto.InternalMessageInfo
+
+func (m *Parent) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type Child struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	Parent               *Parent  `protobuf:"bytes,2,opt,name=Parent,proto3" json:"Parent,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Child) Reset()         { *m = Child{} }
+func (m *Child) String() string { return proto.CompactTextString(m) }
+func (*Child) ProtoMessage()    {}
+func (*Child) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86386df630750539, []int{4}
+}
+
+func (m *Child) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Child.Unmarshal(m, b)
+}
+func (m *Child) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Child.Marshal(b, m, deterministic)
+}
+func (m *Child) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Child.Merge(m, src)
+}
+func (m *Child) XXX_Size() int {
+	return xxx_messageInfo_Child.Size(m)
+}
+func (m *Child) XXX_DiscardUnknown() {
+	xxx_messageInfo_Child.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Child proto.InternalMessageInfo
+
+func (m *Child) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Child) GetParent() *Parent {
+	if m != nil {
+		return m.Parent
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Model)(nil), "Model")
+	proto.RegisterType((*TS)(nil), "TS")
+	proto.RegisterType((*StructMessage)(nil), "StructMessage")
+	proto.RegisterType((*Parent)(nil), "Parent")
+	proto.RegisterType((*Child)(nil), "Child")
 }
 
 func init() { proto.RegisterFile("unsupported.proto", fileDescriptor_86386df630750539) }
 
 var fileDescriptor_86386df630750539 = []byte{
-	// 84 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0xcd, 0x2b, 0x2e,
-	0x2d, 0x28, 0xc8, 0x2f, 0x2a, 0x49, 0x4d, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x57, 0x52, 0xe3,
-	0x62, 0xf5, 0xcd, 0x4f, 0x49, 0xcd, 0x11, 0x92, 0xe5, 0xe2, 0x2a, 0xcd, 0xcc, 0x2b, 0x31, 0x36,
-	0x8a, 0xcf, 0x4e, 0xad, 0x94, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0d, 0xe2, 0x84, 0x88, 0x78, 0xa7,
-	0x56, 0x26, 0xb1, 0x81, 0x95, 0x1b, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x9a, 0xf2, 0x8b, 0x02,
-	0x43, 0x00, 0x00, 0x00,
+	// 239 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x8e, 0xc1, 0x4b, 0xc3, 0x30,
+	0x14, 0xc6, 0xd9, 0x70, 0x93, 0xbe, 0xb1, 0x83, 0xb9, 0x38, 0xc6, 0x64, 0x92, 0x83, 0x78, 0xca,
+	0xa0, 0x43, 0xf0, 0x20, 0x5e, 0x04, 0x2f, 0x63, 0x2a, 0xe9, 0xee, 0x92, 0xd9, 0x67, 0x2d, 0xb6,
+	0x4d, 0x48, 0x5e, 0x0e, 0xfb, 0xef, 0xa5, 0x49, 0x4b, 0x41, 0xbd, 0xe5, 0x7d, 0xef, 0xf7, 0xbe,
+	0x5f, 0xe0, 0xc2, 0x37, 0xce, 0x1b, 0xa3, 0x2d, 0x61, 0x2e, 0x8c, 0xd5, 0xa4, 0x97, 0xeb, 0x42,
+	0xeb, 0xa2, 0xc2, 0x4d, 0x98, 0x8e, 0xfe, 0x73, 0x43, 0x65, 0x8d, 0x8e, 0x54, 0x6d, 0x3a, 0x60,
+	0xf5, 0x1b, 0x70, 0x64, 0xfd, 0x07, 0xc5, 0x2d, 0xbf, 0x81, 0xc9, 0x5e, 0xe7, 0x58, 0xb1, 0x2b,
+	0x00, 0x5f, 0x36, 0xb4, 0x4d, 0xdf, 0xbf, 0xf1, 0xb4, 0x18, 0x5d, 0x8f, 0x6e, 0xe7, 0x32, 0x89,
+	0xc9, 0x0e, 0x4f, 0xfc, 0x11, 0xc6, 0x87, 0x8c, 0xdd, 0x43, 0x92, 0x91, 0x6a, 0xed, 0xaf, 0x4d,
+	0x60, 0x66, 0xe9, 0x52, 0xc4, 0x7e, 0xd1, 0xf7, 0x8b, 0x43, 0xff, 0x01, 0x39, 0xc0, 0xfc, 0x19,
+	0xe6, 0x59, 0xf0, 0xee, 0xd1, 0x39, 0x55, 0x20, 0xbb, 0x6b, 0xab, 0xda, 0x60, 0xd7, 0xe9, 0x66,
+	0xe9, 0xe5, 0x9f, 0xaa, 0x48, 0xc8, 0x81, 0xe4, 0x2b, 0x98, 0xbe, 0x29, 0x8b, 0x0d, 0x31, 0x06,
+	0x67, 0x2f, 0xaa, 0xc6, 0x70, 0x9b, 0xc8, 0xf0, 0xe6, 0x0f, 0x30, 0x79, 0xfa, 0x2a, 0xab, 0xfc,
+	0xbf, 0x25, 0x5b, 0xf7, 0xa7, 0x8b, 0x71, 0xd0, 0x9d, 0x8b, 0x38, 0xca, 0x2e, 0x3e, 0x4e, 0x83,
+	0x77, 0xfb, 0x13, 0x00, 0x00, 0xff, 0xff, 0x5a, 0xbc, 0xb4, 0xd8, 0x66, 0x01, 0x00, 0x00,
 }

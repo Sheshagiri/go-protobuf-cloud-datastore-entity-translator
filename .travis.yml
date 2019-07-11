@@ -4,7 +4,8 @@ go:
  - 1.12.x
 
 os: linux
-dist: trusty
+dist: xenial
+
 sudo: false
 
 branches:
@@ -18,9 +19,20 @@ notifications:
 
 install: true
 
+before_script:
+  - export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+  - echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+  - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+  - sudo apt-get update && sudo apt-get install google-cloud-sdk
+  - nohup gcloud beta emulators datastore start &
+  - sleep 30
+  - export DATASTORE_EMULATOR_HOST=localhost:8081
+
 script:
-  - cd translator
+  - cd datastore-translator
+  - echo $DATASTORE_EMULATOR_HOST
   - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
+#  - go test -v ./... -race -tags=integration
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

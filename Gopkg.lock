@@ -2,7 +2,8 @@
 
 
 [[projects]]
-  digest = "1:74cf9e090ca4b63e9a111175c39b030fccb09a4210a69585ccc631279909b493"
+  branch = "master"
+  digest = "1:42579ccf06a277d5767bb721601e62b32c350f9fcde7cb42b745111f633b887b"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
@@ -14,19 +15,11 @@
     "internal/version",
   ]
   pruneopts = "UT"
-  revision = "457ea5c15ccf3b87db582c450e80101989da35f7"
-  version = "v0.40.0"
+  revision = "3013110075007e99fa45d0b9eb3388807796b7d5"
+  source = "github.com/Sheshagiri/google-cloud-go"
 
 [[projects]]
-  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  pruneopts = "UT"
-  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
-  version = "v1.1.1"
-
-[[projects]]
-  digest = "1:499b09c6fecbec76e839ef9acf07af100219048ed22b3ca7d78948ae2767e781"
+  digest = "1:1c034971bb84d7e321e5716384cc1e4b9be762477281be3d0ba218dcb55963d6"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -39,8 +32,29 @@
     "ptypes/wrappers",
   ]
   pruneopts = "UT"
-  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
-  version = "v1.3.1"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
+
+[[projects]]
+  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "UT"
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
+  version = "v0.2.0"
+
+[[projects]]
+  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:766102087520f9d54f2acc72bd6637045900ac735b4a419b128d216f0c5c4876"
@@ -59,20 +73,20 @@
   version = "v0.5.1"
 
 [[projects]]
-  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
+  digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
+  name = "github.com/pborman/uuid"
+  packages = ["."]
   pruneopts = "UT"
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
 
 [[projects]]
-  digest = "1:972c2427413d41a1e06ca4897e8528e5a1622894050e2f527b38ddf0f343f759"
-  name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
+  name = "github.com/pkg/errors"
+  packages = ["."]
   pruneopts = "UT"
-  revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
-  version = "v1.3.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:bf33f7cd985e8e62eeef3b1985ec48f0f274e4083fa811596aafaf3af2947e83"
@@ -133,11 +147,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:730ba27cd66db3b98ec8f51a6f20d45ec277d490cca36b1f54e31d3fcaf4840e"
+  digest = "1:5b3f90037a9027c43bdcae488c39d41aadecb9d85e645bb62b773a0a6f6e86b8"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
+  revision = "6ec70d6a5542cba804c6d16ebe8392601a0b7b60"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -165,11 +179,9 @@
   version = "v0.3.2"
 
 [[projects]]
-  digest = "1:26f740b2cee0a10ea1ac2bb72eb231b857e5b002c29a880a61976dd7ace863e3"
+  digest = "1:341d8e5c30ab07533e4a9a5c0203138160984e2553415e9cb5d113fe31185800"
   name = "google.golang.org/api"
   packages = [
-    "datastore/v1",
-    "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
     "googleapi/transport",
@@ -218,10 +230,10 @@
     "googleapis/type/latlng",
   ]
   pruneopts = "UT"
-  revision = "eb59cef1c072c61ea4f7623910448d5e9c6a4455"
+  revision = "3bdd9d9f5532d75d09efb230bd767d265245cfe5"
 
 [[projects]]
-  digest = "1:9db2e6e9d0d0a6580f01a242d30e895efd65b57ed923f50ea37667a6c09665bd"
+  digest = "1:94dd3fb42315b97533bb74fe15498905734bc3a3c6e692dc7839fec749d44d26"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -264,13 +276,28 @@
     "resolver",
     "resolver/dns",
     "resolver/passthrough",
+    "serviceconfig",
     "stats",
     "status",
     "tap",
   ]
   pruneopts = "UT"
-  revision = "501c41df7f472c740d0674ff27122f3f48c80ce7"
-  version = "v1.21.1"
+  revision = "1d89a3c832915b2314551c1d2a506874d62e53f7"
+  version = "v1.22.0"
+
+[[projects]]
+  digest = "1:a5cc901b8e54c4b73a62f97dc7c8f6c46e347c148a7a38e09b2e942c2587ba03"
+  name = "gotest.tools"
+  packages = [
+    "assert",
+    "assert/cmp",
+    "internal/difflib",
+    "internal/format",
+    "internal/source",
+  ]
+  pruneopts = "UT"
+  revision = "1083505acf35a0bd8a696b26837e1fb3187a7a83"
+  version = "v2.3.0"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -278,10 +305,12 @@
   input-imports = [
     "cloud.google.com/go/datastore",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/struct",
     "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/stretchr/testify/assert",
-    "google.golang.org/api/datastore/v1",
+    "github.com/pborman/uuid",
+    "google.golang.org/genproto/googleapis/datastore/v1",
+    "gotest.tools/assert",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

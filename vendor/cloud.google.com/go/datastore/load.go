@@ -17,10 +17,12 @@ package datastore
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/internal/fields"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 )
 
@@ -336,8 +338,14 @@ func setVal(v reflect.Value, p Property) (s string) {
 			v.Elem().SetBool(x)
 		case string:
 			v.Elem().SetString(x)
-		case GeoPoint, time.Time:
+		case GeoPoint:
 			v.Elem().Set(reflect.ValueOf(x))
+		case *timestamp.Timestamp:
+			ts := timestamp.Timestamp{
+				Seconds: x.Seconds,
+				Nanos:   x.Nanos,
+			}
+			v.Elem().Set(reflect.ValueOf(ts))
 		default:
 			return typeMismatchReason(p, v)
 		}
@@ -506,7 +514,8 @@ func propToValue(v *pb.Value) (interface{}, error) {
 	case *pb.Value_DoubleValue:
 		return v.DoubleValue, nil
 	case *pb.Value_TimestampValue:
-		return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
+		//return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
+		return v.TimestampValue, nil
 	case *pb.Value_KeyValue:
 		return protoToKey(v.KeyValue)
 	case *pb.Value_StringValue:
@@ -530,4 +539,55 @@ func propToValue(v *pb.Value) (interface{}, error) {
 	default:
 		return nil, nil
 	}
+}
+
+// EntityToStruct will load the given Entity to Go struct.
+func EntityToStruct(dst interface{}, ent *Entity) error {
+	pls, err := newStructPLS(dst)
+	if err != nil {
+		return err
+	}
+
+	// Try and load key.
+	keyField := pls.codec.Match(keyFieldName)
+	if keyField != nil && ent.Key != nil {
+		pls.v.FieldByIndex(keyField.Index).Set(reflect.ValueOf(ent.Key))
+	}
+
+	// Load properties.
+	return pls.Load(ent.Properties)
+}
+
+// ProtoToEntity will convert the Entity from low level datastore Entity to Entity defined in this sdk.
+func ProtoToEntity(src *pb.Entity, snakeCase bool) (*Entity, error) {
+	props := make([]Property, 0, len(src.Properties))
+	for name, val := range src.Properties {
+		v, err := propToValue(val)
+		if err != nil {
+			return nil, err
+		}
+		if snakeCase {
+			name = toCamelCase(name)
+		}
+		props = append(props, Property{
+			Name:    name,
+			Value:   v,
+			NoIndex: val.ExcludeFromIndexes,
+		})
+	}
+	var key *Key
+	if src.Key != nil {
+		// Ignore any error, since nested entity values
+		// are allowed to have an invalid key.
+		key, _ = protoToKey(src.Key)
+	}
+
+	return &Entity{key, props}, nil
+}
+
+func toCamelCase(name string) string {
+	reg := regexp.MustCompile("(^[A-Za-z])|_([A-Za-z])")
+	return reg.ReplaceAllStringFunc(name, func(s string) string {
+		return strings.ToUpper(strings.Replace(s, "_", "", -1))
+	})
 }
