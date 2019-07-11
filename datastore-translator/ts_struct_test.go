@@ -1,11 +1,12 @@
-package translator
+package datastore_translator
 
 import (
-	"fmt"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
 	"gotest.tools/assert"
+	"log"
 	"testing"
 )
 
@@ -13,11 +14,11 @@ func TestAddTSSupport(t *testing.T) {
 	src := &unsupported.TS{
 		StartedOn: ptypes.TimestampNow(),
 	}
-	fmt.Println("Source: ", src)
+	log.Println("Source: ", src)
 	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
 
 	assert.NilError(t, err)
-	fmt.Println("Source Datastore Entity: ", srcEntity)
+	log.Println("Source Datastore Entity: ", srcEntity)
 
 	dst := &unsupported.TS{}
 
@@ -48,16 +49,54 @@ func TestAddStructSupport(t *testing.T) {
 			},
 		},
 	}
-	fmt.Println("Source: ", src)
+	log.Println("Source: ", src)
 	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
 
 	assert.NilError(t, err)
-	fmt.Println("Source Datastore Entity: ", srcEntity)
+	log.Println("Source Datastore Entity: ", srcEntity)
 
 	dst := &unsupported.StructMessage{}
 
 	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
 	assert.NilError(t, err)
-	fmt.Println("",dst)
+	log.Println("", dst)
+	assert.DeepEqual(t, src, dst)
+}
+
+func TestSliceofNestedMessages(t *testing.T) {
+	src := &example.ExampleDBModel{
+		ComplexArrayKey: []*example.ExampleNestedModel{
+			{
+				StringKey: "string-1",
+			},
+			{
+				StringKey: "string-2",
+			},
+		},
+	}
+	log.Println("Source: ", src)
+	_, err := ProtoMessageToDatastoreEntity(src, false)
+	//slices of nested messages in not suported yet
+	assert.Error(t, err, "[toDatastoreValue]: datatype[*example.ExampleNestedModel] not supported")
+}
+
+func TestNestedMessages(t *testing.T) {
+	src := &unsupported.Child{
+		Name: "Alex-II",
+		Parent: &unsupported.Parent{
+			Name: "Alex-I",
+		},
+	}
+	log.Println("Source: ", src)
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
+
+	assert.NilError(t, err)
+	log.Println("Source Datastore Entity: ", srcEntity)
+
+	dst := &unsupported.Child{}
+
+	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	assert.NilError(t, err)
+	log.Println("", dst)
 	assert.DeepEqual(t, src, dst)
 }

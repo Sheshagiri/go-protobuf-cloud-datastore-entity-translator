@@ -29,7 +29,7 @@ before_script:
   - export DATASTORE_EMULATOR_HOST=localhost:8081
 
 script:
-  - cd translator
+  - cd datastore-translator
   - echo $DATASTORE_EMULATOR_HOST
   - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
 #  - go test -v ./... -race -tags=integration

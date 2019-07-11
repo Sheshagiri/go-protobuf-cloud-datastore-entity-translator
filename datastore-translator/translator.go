@@ -1,4 +1,4 @@
-package translator
+package datastore_translator
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity da
 			if value, err = toDatastoreValue(srcValues.Field(i)); err != nil {
 				return
 			} else {
-				if value.ValueType != nil {
+				if value != nil {
 					if snakeCase {
 						fName = toSnakeCase(fName)
 					}
@@ -63,30 +63,32 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 					}
 					fValue := src.Properties[keyName]
 					fType := dstValues.Type().Field(i).Type.Kind()
-					log.Printf("name: %s, type: %s\n", fName, fType)
+					//log.Printf("name: %s, type: %s\n", fName, fType)
 					switch fType {
 					case reflect.Map:
-						entity := fValue.GetEntityValue()
-						switch dstValues.Type().Field(i).Type.String() {
-						// rudimentary impl, as I can't get hold of the type with Kind() here, look at Indirect() later
-						case "map[string]string":
-							m := make(map[string]string)
-							for key, value := range entity.Properties {
-								m[key] = value.GetStringValue()
+						if !reflect.ValueOf(fValue).IsNil() {
+							entity := fValue.GetEntityValue()
+							switch dstValues.Type().Field(i).Type.String() {
+							// rudimentary impl, as I can't get hold of the type with Kind() here, look at Indirect() later
+							case "map[string]string":
+								m := make(map[string]string)
+								for key, value := range entity.Properties {
+									m[key] = value.GetStringValue()
+								}
+								dstValues.Field(i).Set(reflect.ValueOf(m))
+							case "map[string]int32":
+								m := make(map[string]int32)
+								for key, value := range entity.Properties {
+									m[key] = int32(value.GetIntegerValue())
+								}
+								dstValues.Field(i).Set(reflect.ValueOf(m))
+							case "map[string]*structpb.Value":
+								m := make(map[string]*structpb.Value)
+								for key, value := range entity.Properties {
+									m[key] = fromDatastoreValueToStructValue(value)
+								}
+								dstValues.Field(i).Set(reflect.ValueOf(m))
 							}
-							dstValues.Field(i).Set(reflect.ValueOf(m))
-						case "map[string]int32":
-							m := make(map[string]int32)
-							for key, value := range entity.Properties {
-								m[key] = int32(value.GetIntegerValue())
-							}
-							dstValues.Field(i).Set(reflect.ValueOf(m))
-						case "map[string]*structpb.Value":
-							m := make(map[string]*structpb.Value)
-							for key, value := range entity.Properties {
-								m[key] = fromDatastoreValueToStructValue(value)
-							}
-							dstValues.Field(i).Set(reflect.ValueOf(m))
 						}
 					case reflect.Ptr:
 						if !reflect.ValueOf(fValue).IsNil() {
@@ -98,7 +100,7 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 									s := &structpb.Struct{}
 									m := make(map[string]*structpb.Value)
 									for key, value := range properties {
-										log.Printf("value type is: %T", value.ValueType)
+										//log.Printf("value type is: %T", value.ValueType)
 										m[key] = fromDatastoreValueToStructValue(value)
 									}
 									s.Fields = m
@@ -173,6 +175,10 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 			EntityValue: entity,
 		}
 	case reflect.Ptr:
+		if fValue.IsNil() || !fValue.IsValid() {
+			// don't return an error because we still want to retain the proto3 behaviour of having default values
+			return nil, nil
+		}
 		iv := fValue.Interface()
 		switch v := iv.(type) {
 		case *structpb.Struct:

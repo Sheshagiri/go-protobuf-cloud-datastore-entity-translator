@@ -1,6 +1,6 @@
 // +build integration
 
-package translator
+package datastore_translator
 
 import (
 	"cloud.google.com/go/datastore"
@@ -55,7 +55,7 @@ func TestIntegration(t *testing.T) {
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 			},
 		},
-		//TimestampKey: ptypes.TimestampNow(),
+		TimestampKey: ptypes.TimestampNow(),
 	}
 
 	log.Printf("original proto: %v", srcProto)
@@ -129,7 +129,18 @@ func TestEmptyProtoMessage(t *testing.T) {
 
 	_, err = client.PutEntity(ctx, key, &translatedProto)
 	//e expect an error when the whole proto is empty
-	assert.Error(t, err, "rpc error: code = Internal desc = grpc: error while marshaling: proto: oneof field has nil value")
+	assert.NilError(t, err)
+
+	// 6. get the saved protobuf from cloud datastore
+	datastoreEntity, err := client.GetEntity(ctx, key)
+	assert.NilError(t, err)
+
+	// 7. create a protobuf that we plan to decode into
+	dstProto := &example.ExampleDBModel{}
+
+	// 8. translate the protobuf from datastore.Entity{} to our own protobuf
+	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, true)
+	assert.NilError(t, err)
 }
 
 func TestProtoWithNilPointer(t *testing.T) {

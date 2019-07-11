@@ -12,5 +12,14 @@ message TS {
 }
 
 message StructMessage {
-    google.protobuf.Struct StructKey = 1;
+    google.protobuf.Struct StructKey=1;
+}
+
+message Parent {
+    string Name=1;
+}
+
+message Child {
+    string Name=1;
+    Parent Parent=2;
 }

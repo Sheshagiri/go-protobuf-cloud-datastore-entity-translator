@@ -1,4 +1,4 @@
-package translator
+package datastore_translator
 
 import (
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
