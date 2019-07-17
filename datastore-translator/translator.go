@@ -7,11 +7,12 @@ import (
 	"reflect"
 	"strings"
 
+	"regexp"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/struct"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/genproto/googleapis/datastore/v1"
-	"regexp"
 
 	clientSDK "cloud.google.com/go/datastore"
 )
@@ -25,7 +26,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity da
 		fName := srcValues.Type().Field(i).Name
 		if !strings.ContainsAny(fName, "XXX_") {
 			var value *datastore.Value
-			if value, err = toDatastoreValue(srcValues.Field(i)); err != nil {
+			if value, err = toDatastoreValue(srcValues.Field(i), snakeCase); err != nil {
 				return
 			} else {
 				if value != nil {
@@ -116,7 +117,7 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 	return err
 }
 
-func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
+func toDatastoreValue(fValue reflect.Value, snakeCase bool) (*datastore.Value, error) {
 	value := &datastore.Value{}
 	var err error
 	switch fValue.Kind() {
@@ -147,7 +148,7 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 			size := fValue.Len()
 			values := make([]*datastore.Value, 0)
 			for i := 0; i < size; i++ {
-				val, err := toDatastoreValue(fValue.Index(i))
+				val, err := toDatastoreValue(fValue.Index(i), snakeCase)
 				if err != nil {
 					return nil, err
 				}
@@ -166,7 +167,7 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 		for _, key := range mapValues.MapKeys() {
 			k := fmt.Sprint(key)
 			//TODO what if there is an error?
-			v, _ := toDatastoreValue(mapValues.MapIndex(key))
+			v, _ := toDatastoreValue(mapValues.MapIndex(key), snakeCase)
 			//fmt.Printf("key; %v, value: %v\n",k,v)
 			properties[k] = v
 		}
@@ -202,7 +203,7 @@ func toDatastoreValue(fValue reflect.Value) (*datastore.Value, error) {
 			// translate any imported protobuf's that we defined ourself
 			if !fValue.IsNil() && fValue.IsValid() {
 				if importedProto, ok := reflect.ValueOf(fValue.Interface()).Interface().(proto.Message); ok {
-					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, false)
+					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, snakeCase)
 					if err != nil {
 						return nil, err
 					}
