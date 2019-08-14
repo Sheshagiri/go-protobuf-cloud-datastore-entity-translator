@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const DATASTORE_CONNECT_TIMEOUT = 5 * time.Second
+
 func TestIntegration(t *testing.T) {
 	ctx := context.Background()
 
@@ -21,7 +23,7 @@ func TestIntegration(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
@@ -125,7 +127,7 @@ func TestEmptyProtoMessage(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
@@ -157,7 +159,7 @@ func TestProtoWithNilPointer(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
