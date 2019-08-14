@@ -15,17 +15,18 @@ branches:
 matrix:
   fast_finish: false
   include:
-    - env: ENV=unit-tests
+    - name: Unit Tests
       script:
         - cd datastore-translator
         - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
-    - env: ENV=integration-tests
+    - name: Integration Tests
+      env:
+        - DATASTORE_EMULATOR_HOST=127.0.0.1:8081
+        - DATASTORE_EMULATOR_HOST_PATH=127.0.0.1:8081/datastore
+        - DATASTORE_HOST=http://127.0.0.1:8081
+        - DATASTORE_PROJECT_ID=translator-tests
       script:
         - cd datastore-translator
-        - export DATASTORE_EMULATOR_HOST=127.0.0.1:8081
-        - export DATASTORE_EMULATOR_HOST_PATH=127.0.0.1:8081/datastore
-        - export DATASTORE_HOST=http://127.0.0.1:8081
-        - export DATASTORE_PROJECT_ID=translator-tests
         - go test -v ./... -race -tags=integration
 
 notifications:
