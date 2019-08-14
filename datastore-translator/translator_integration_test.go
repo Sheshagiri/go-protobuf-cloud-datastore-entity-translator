@@ -60,7 +60,7 @@ func TestIntegration(t *testing.T) {
 
 	log.Printf("original proto: %v", srcProto)
 	// 4. translate the source protobuf to datastore.Entity
-	translatedSrcProto, err := ProtoMessageToDatastoreEntity(srcProto, true)
+	translatedSrcProto, err := ProtoMessageToDatastoreEntity(srcProto, true, nil)
 	assert.NilError(t, err)
 
 	// 5. save the translated protobuf to datastore
@@ -124,7 +124,7 @@ func TestEmptyProtoMessage(t *testing.T) {
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
 
 	srcProto := &example.ExampleDBModel{}
-	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false, nil)
 	assert.NilError(t, err)
 
 	_, err = client.PutEntity(ctx, key, &translatedProto)
@@ -155,7 +155,7 @@ func TestProtoWithNilPointer(t *testing.T) {
 	srcProto := &example.ExampleDBModel{
 		TimestampKey: ptypes.TimestampNow(),
 	}
-	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false, nil)
 	assert.NilError(t, err)
 
 	_, err = client.PutEntity(ctx, key, &translatedProto)
