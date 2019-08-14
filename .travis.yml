@@ -24,7 +24,7 @@ before_script:
   - echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
   - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
   - sudo apt-get update && sudo apt-get install google-cloud-sdk
-  - nohup gcloud beta emulators datastore start &
+  - nohup gcloud beta emulators datastore start --host-port=127.0.0.1:8081 --no-store-on-disk &
   - sleep 30
   - export DATASTORE_EMULATOR_HOST=localhost:8081
 
@@ -32,7 +32,7 @@ script:
   - cd datastore-translator
   - echo $DATASTORE_EMULATOR_HOST
   - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
-#  - go test -v ./... -race -tags=integration
+  - go test -v ./... -race -tags=integration
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
