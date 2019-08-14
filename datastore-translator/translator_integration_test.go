@@ -11,13 +11,18 @@ import (
 	"gotest.tools/assert"
 	"log"
 	"testing"
+	"time"
 )
 
 func TestIntegration(t *testing.T) {
 	ctx := context.Background()
+
 	// 1. create a new datastore client
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
 	// 2. create a key that we plan to save into
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_2", nil)
@@ -120,6 +125,9 @@ func TestEmptyProtoMessage(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	// 2. create a key that we plan to save into
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
 
@@ -148,6 +156,9 @@ func TestProtoWithNilPointer(t *testing.T) {
 	// 1. create a new datastore client
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
 	// 2. create a key that we plan to save into
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
