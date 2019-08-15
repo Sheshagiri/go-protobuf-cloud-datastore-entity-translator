@@ -18,7 +18,7 @@ import (
 )
 
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
-func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity datastore.Entity, err error) {
+func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFromIndex []string) (entity datastore.Entity, err error) {
 	srcValues := reflect.ValueOf(src).Elem()
 	properties := make(map[string]*datastore.Value)
 
@@ -26,7 +26,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity da
 		fName := srcValues.Type().Field(i).Name
 		if !strings.ContainsAny(fName, "XXX_") {
 			var value *datastore.Value
-			if value, err = toDatastoreValue(srcValues.Field(i), snakeCase); err != nil {
+			if value, err = toDatastoreValue(fName, srcValues.Field(i), snakeCase, excludeFromIndex); err != nil {
 				return
 			} else {
 				if value != nil {
@@ -117,7 +117,18 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 	return err
 }
 
-func toDatastoreValue(fValue reflect.Value, snakeCase bool) (*datastore.Value, error) {
+func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool, excludeFromIndex []string) (*datastore.Value, error) {
+	// NOTE: excludeFieldFromIndex needs to contain original Protobuf model field names which can also include underscores
+	var origFName string
+
+	if snakeCase {
+		origFName = toSnakeCase(fName)
+	} else {
+		origFName = fName
+	}
+
+	excludeFieldFromIndex := contains(excludeFromIndex, origFName)
+
 	value := &datastore.Value{}
 	var err error
 	switch fValue.Kind() {
@@ -148,7 +159,7 @@ func toDatastoreValue(fValue reflect.Value, snakeCase bool) (*datastore.Value, e
 			size := fValue.Len()
 			values := make([]*datastore.Value, 0)
 			for i := 0; i < size; i++ {
-				val, err := toDatastoreValue(fValue.Index(i), snakeCase)
+				val, err := toDatastoreValue(fName, fValue.Index(i), snakeCase, nil)
 				if err != nil {
 					return nil, err
 				}
@@ -167,7 +178,7 @@ func toDatastoreValue(fValue reflect.Value, snakeCase bool) (*datastore.Value, e
 		for _, key := range mapValues.MapKeys() {
 			k := fmt.Sprint(key)
 			//TODO what if there is an error?
-			v, _ := toDatastoreValue(mapValues.MapIndex(key), snakeCase)
+			v, _ := toDatastoreValue(fName, mapValues.MapIndex(key), snakeCase, nil)
 			//fmt.Printf("key; %v, value: %v\n",k,v)
 			properties[k] = v
 		}
@@ -203,7 +214,7 @@ func toDatastoreValue(fValue reflect.Value, snakeCase bool) (*datastore.Value, e
 			// translate any imported protobuf's that we defined ourself
 			if !fValue.IsNil() && fValue.IsValid() {
 				if importedProto, ok := reflect.ValueOf(fValue.Interface()).Interface().(proto.Message); ok {
-					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, snakeCase)
+					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, snakeCase, excludeFromIndex)
 					if err != nil {
 						return nil, err
 					}
@@ -220,6 +231,13 @@ func toDatastoreValue(fValue reflect.Value, snakeCase bool) (*datastore.Value, e
 		log.Println(errString)
 		err = errors.New(errString)
 	}
+
+	if excludeFieldFromIndex == true {
+		value.ExcludeFromIndexes = true
+	} else {
+		value.ExcludeFromIndexes = false
+	}
+
 	return value, err
 }
 
@@ -310,4 +328,13 @@ func toSnakeCase(name string) string {
 	snake := matchFirstCap.ReplaceAllString(name, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
+}
+
+func contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }

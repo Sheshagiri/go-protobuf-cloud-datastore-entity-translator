@@ -12,6 +12,23 @@ branches:
   only:
   - master
 
+matrix:
+  fast_finish: false
+  include:
+    - name: Unit Tests
+      script:
+        - cd datastore-translator
+        - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
+    - name: Integration Tests
+      env:
+        - DATASTORE_EMULATOR_HOST=127.0.0.1:8081
+        - DATASTORE_EMULATOR_HOST_PATH=127.0.0.1:8081/datastore
+        - DATASTORE_HOST=http://127.0.0.1:8081
+        - DATASTORE_PROJECT_ID=translator-tests
+      script:
+        - cd datastore-translator
+        - go test -v ./... -race -tags=integration
+
 notifications:
   email:
     on_success: change
@@ -20,19 +37,7 @@ notifications:
 install: true
 
 before_script:
-  - export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
-  - echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-  - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-  - sudo apt-get update && sudo apt-get install google-cloud-sdk
-  - nohup gcloud beta emulators datastore start &
-  - sleep 30
-  - export DATASTORE_EMULATOR_HOST=localhost:8081
-
-script:
-  - cd datastore-translator
-  - echo $DATASTORE_EMULATOR_HOST
-  - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
-#  - go test -v ./... -race -tags=integration
+  - ./scripts/run-datastore-emulator.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

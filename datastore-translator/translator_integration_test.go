@@ -11,13 +11,20 @@ import (
 	"gotest.tools/assert"
 	"log"
 	"testing"
+	"time"
 )
+
+const DATASTORE_CONNECT_TIMEOUT = 5 * time.Second
 
 func TestIntegration(t *testing.T) {
 	ctx := context.Background()
+
 	// 1. create a new datastore client
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
+
+	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	defer cancel()
 
 	// 2. create a key that we plan to save into
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_2", nil)
@@ -60,7 +67,7 @@ func TestIntegration(t *testing.T) {
 
 	log.Printf("original proto: %v", srcProto)
 	// 4. translate the source protobuf to datastore.Entity
-	translatedSrcProto, err := ProtoMessageToDatastoreEntity(srcProto, true)
+	translatedSrcProto, err := ProtoMessageToDatastoreEntity(srcProto, true, nil)
 	assert.NilError(t, err)
 
 	// 5. save the translated protobuf to datastore
@@ -120,11 +127,14 @@ func TestEmptyProtoMessage(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
+	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	defer cancel()
+
 	// 2. create a key that we plan to save into
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
 
 	srcProto := &example.ExampleDBModel{}
-	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false, nil)
 	assert.NilError(t, err)
 
 	_, err = client.PutEntity(ctx, key, &translatedProto)
@@ -149,13 +159,16 @@ func TestProtoWithNilPointer(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
+	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	defer cancel()
+
 	// 2. create a key that we plan to save into
 	key := datastore.NameKey("Example_DB_Model", "complex_proto_empty", nil)
 
 	srcProto := &example.ExampleDBModel{
 		TimestampKey: ptypes.TimestampNow(),
 	}
-	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false)
+	translatedProto, err := ProtoMessageToDatastoreEntity(srcProto, false, nil)
 	assert.NilError(t, err)
 
 	_, err = client.PutEntity(ctx, key, &translatedProto)
