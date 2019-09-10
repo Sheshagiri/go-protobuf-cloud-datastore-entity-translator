@@ -2,10 +2,18 @@ syntax="proto3";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/descriptor.proto";
+
+// Custom Protobuf option which specifies which model fields should be excluded
+// from index
+extend google.protobuf.FieldOptions {
+    bool exclude_from_index = 50000;
+}
 
 message ExecutionRequest {
-    string uuid=1;
-    string action=2;
-    google.protobuf.Timestamp started_on=3;
-    google.protobuf.Struct parameters=4;
+    string uuid = 1;
+    string action = 2;
+    google.protobuf.Timestamp started_on = 3;
+    google.protobuf.Struct parameters = 4 [(exclude_from_index) = true];
+    bytes result = 5 [(exclude_from_index) = true];
 }

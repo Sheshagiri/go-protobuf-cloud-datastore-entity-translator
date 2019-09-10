@@ -16,7 +16,7 @@ func TestNestedModel(t *testing.T) {
 		StringKey: "some random string",
 		Int32Key:  22,
 	}
-	entity, err := ProtoMessageToDatastoreEntity(srcProto, true, nil)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	// make sure there is no error
 	assert.NilError(t, err)
 	dstProto := &example.ExampleNestedModel{}
@@ -39,24 +39,11 @@ func TestProtoMessageToDatastoreEntityWithExcludeFieldsFromIndex(t *testing.T) {
 	}
 
 	// No exclude from index fields specified
-	entity, err := ProtoMessageToDatastoreEntity(srcProto, true, nil)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	assert.NilError(t, err)
 	assert.Equal(t, entity.Properties["string_key"].ExcludeFromIndexes, false)
 	assert.Equal(t, entity.Properties["bytes_key"].ExcludeFromIndexes, false)
 	assert.Equal(t, entity.Properties["float_key"].ExcludeFromIndexes, false)
-
-	assert.Equal(t, entity.Properties["bool_key"].ExcludeFromIndexes, false)
-	assert.Equal(t, entity.Properties["int32_key"].ExcludeFromIndexes, false)
-	assert.Equal(t, entity.Properties["double_key"].ExcludeFromIndexes, false)
-
-	// Some exclude from index fields specified
-	excludeFromIndex := [...]string{"string_key", "bytes_key", "float_key"}
-
-	entity, err = ProtoMessageToDatastoreEntity(srcProto, true, excludeFromIndex[:])
-	assert.NilError(t, err)
-	assert.Equal(t, entity.Properties["string_key"].ExcludeFromIndexes, true)
-	assert.Equal(t, entity.Properties["bytes_key"].ExcludeFromIndexes, true)
-	assert.Equal(t, entity.Properties["float_key"].ExcludeFromIndexes, true)
 
 	assert.Equal(t, entity.Properties["bool_key"].ExcludeFromIndexes, false)
 	assert.Equal(t, entity.Properties["int32_key"].ExcludeFromIndexes, false)
@@ -109,7 +96,7 @@ func TestFullyPopulatedModel(t *testing.T) {
 		},
 		TimestampKey: ptypes.TimestampNow(),
 	}
-	entity, err := ProtoMessageToDatastoreEntity(srcProto, true, nil)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 
 	// make sure there is no error
 	assert.NilError(t, err)
@@ -153,7 +140,7 @@ func TestFullyPopulatedModel(t *testing.T) {
 func TestPartialModel(t *testing.T) {
 	partialProto := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
+			"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue: "some random string in proto.Struct"}},
 			// not ready for this yet
 			// "struct-key-list":   {Kind: &structpb.Value_ListValue{}},
 			"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
@@ -161,14 +148,14 @@ func TestPartialModel(t *testing.T) {
 			"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 		},
 	}
-	entity, err := ProtoMessageToDatastoreEntity(partialProto, true, nil)
+	entity, err := ProtoMessageToDatastoreEntity(partialProto, true)
 	assert.NilError(t, err, err)
 	log.Println(entity)
 	dstProto := &structpb.Struct{}
 	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	assert.NilError(t, err)
 
-	//assert google.protobuf.Struct
+	// assert google.protobuf.Struct
 	assert.DeepEqual(t, partialProto.Fields["struct-key-string"], dstProto.Fields["struct-key-string"])
 }
 
@@ -176,7 +163,7 @@ func TestUnSupportedTypes(t *testing.T) {
 	srcProto := &unsupported.Model{
 		Uint32Key: uint32(10),
 	}
-	_, err := ProtoMessageToDatastoreEntity(srcProto, false, nil)
+	_, err := ProtoMessageToDatastoreEntity(srcProto, false)
 	assert.Error(t, err, "[toDatastoreValue]: datatype[uint32] not supported")
 }
 
@@ -185,7 +172,7 @@ func TestPMtoDE(t *testing.T) {
 		StringKey: "some random string",
 		Int32Key:  22,
 	}
-	entity, err := ProtoMessageToDatastoreEntity(srcProto, true, nil)
+	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	assert.NilError(t, err)
 	log.Println(entity)
 }
@@ -353,7 +340,7 @@ func TestProtoWithCustomImport(t *testing.T) {
 		},
 	}
 
-	dstEntity, err := ProtoMessageToDatastoreEntity(srcProto, false, nil)
+	dstEntity, err := ProtoMessageToDatastoreEntity(srcProto, false)
 	assert.NilError(t, err)
 	// our interest here only to compare the ComplexArrayKey
 	assert.DeepEqual(t, srcEntity.GetProperties()["ComplexArrayKey"], dstEntity.GetProperties()["ComplexArrayKey"])

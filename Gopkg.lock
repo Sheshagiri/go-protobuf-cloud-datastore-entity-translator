@@ -19,9 +19,10 @@
   source = "github.com/Sheshagiri/google-cloud-go"
 
 [[projects]]
-  digest = "1:1c034971bb84d7e321e5716384cc1e4b9be762477281be3d0ba218dcb55963d6"
+  digest = "1:0d73d7969b3724ec7cbd1f5238abba55d178d17744680ee27b3c18c4699c85de"
   name = "github.com/golang/protobuf"
   packages = [
+    "descriptor",
     "proto",
     "protoc-gen-go/descriptor",
     "ptypes",
@@ -304,7 +305,9 @@
   analyzer-version = 1
   input-imports = [
     "cloud.google.com/go/datastore",
+    "github.com/golang/protobuf/descriptor",
     "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/struct",
     "github.com/golang/protobuf/ptypes/timestamp",

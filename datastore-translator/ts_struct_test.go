@@ -15,7 +15,7 @@ func TestAddTSSupport(t *testing.T) {
 		StartedOn: ptypes.TimestampNow(),
 	}
 	log.Println("Source: ", src)
-	srcEntity, err := ProtoMessageToDatastoreEntity(src, false, nil)
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
 
 	assert.NilError(t, err)
 	log.Println("Source Datastore Entity: ", srcEntity)
@@ -50,7 +50,7 @@ func TestAddStructSupport(t *testing.T) {
 		},
 	}
 	log.Println("Source: ", src)
-	srcEntity, err := ProtoMessageToDatastoreEntity(src, false, nil)
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
 
 	assert.NilError(t, err)
 	log.Println("Source Datastore Entity: ", srcEntity)
@@ -75,7 +75,7 @@ func TestSliceofNestedMessages(t *testing.T) {
 		},
 	}
 	log.Println("Source: ", src)
-	srcEntity, err := ProtoMessageToDatastoreEntity(src, false, nil)
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
 	assert.NilError(t, err)
 
 	log.Println("Source Datastore Entity: ", srcEntity)
@@ -97,7 +97,7 @@ func TestNestedMessages(t *testing.T) {
 		},
 	}
 	log.Println("Source: ", src)
-	srcEntity, err := ProtoMessageToDatastoreEntity(src, false, nil)
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
 	assert.NilError(t, err)
 
 	log.Println("Source Datastore Entity: ", srcEntity)
