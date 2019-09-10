@@ -26,14 +26,21 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFro
 	srcValues := reflect.ValueOf(src).Elem()
 	properties := make(map[string]*datastore.Value)
 	// see https://github.com/golang/protobuf/issues/372
+	fd, md := descriptor.ForMessage(src.(descriptor.Message))
 	// this is the default name
 	excludeFromIndexExt := "[exclude_from_index]:true "
 	var excludeIndex string
+	// use the Extension name is passed else derive it dynamically
 	if excludeFromIndexName != nil && len(excludeFromIndexName) > 0 {
 		excludeFromIndexExt = fmt.Sprintf("[%s]:true ", excludeFromIndexName[0])
 		excludeIndex = excludeFromIndexName[0]
+	} else {
+		if len(fd.GetExtension()) > 0 {
+			excludeIndex = fd.GetExtension()[0].GetName()
+			excludeFromIndexExt = fmt.Sprintf("[%s]:true ", excludeIndex)
+		}
 	}
-	_, md := descriptor.ForMessage(src.(descriptor.Message))
+
 	excludeFields := make(map[string]string, 0)
 	for _, fd := range md.GetField() {
 		if fd.GetOptions() != nil {
