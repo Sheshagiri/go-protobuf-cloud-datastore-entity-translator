@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestExclude(t *testing.T) {
+func TestFieldsWithExclude(t *testing.T) {
 	er := &execution.ExecutionRequest{
 		Uuid:      "some uuid",
 		Action:    "some random action",
@@ -35,7 +35,7 @@ func TestExclude(t *testing.T) {
 		},
 		Result: []byte("some large message, this will not be indexed in cloud datastore"),
 	}
-	entity, err := ProtoMessageToDatastoreEntity(er, true)
+	entity, err := ProtoMessageToDatastoreEntity(er, true, "exclude_from_index")
 	assert.NilError(t, err)
 	assert.Equal(t, entity.Properties["result"].ExcludeFromIndexes, true)
 	assert.Equal(t, entity.Properties["parameters"].ExcludeFromIndexes, true)

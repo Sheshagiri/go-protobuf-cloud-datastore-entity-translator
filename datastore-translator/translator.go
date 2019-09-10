@@ -19,11 +19,20 @@ import (
 )
 
 // ProtoMessageToDatastoreEntity will generate an Entity Protobuf that datastore understands
-func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity datastore.Entity, err error) {
+func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFromIndexName ...string) (entity datastore.Entity, err error) {
+	if len(excludeFromIndexName) > 1 {
+		return entity, errors.New("exclude only works with one extension")
+	}
 	srcValues := reflect.ValueOf(src).Elem()
 	properties := make(map[string]*datastore.Value)
 	// see https://github.com/golang/protobuf/issues/372
+	// this is the default name
 	excludeFromIndexExt := "[exclude_from_index]:true "
+	var excludeIndex string
+	if excludeFromIndexName != nil && len(excludeFromIndexName) > 0 {
+		excludeFromIndexExt = fmt.Sprintf("[%s]:true ", excludeFromIndexName[0])
+		excludeIndex = excludeFromIndexName[0]
+	}
 	_, md := descriptor.ForMessage(src.(descriptor.Message))
 	excludeFields := make(map[string]string, 0)
 	for _, fd := range md.GetField() {
@@ -35,7 +44,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool) (entity da
 		fName := srcValues.Type().Field(i).Name
 		if !strings.ContainsAny(fName, "XXX_") {
 			var value *datastore.Value
-			if value, err = toDatastoreValue(fName, srcValues.Field(i), snakeCase); err != nil {
+			if value, err = toDatastoreValue(fName, srcValues.Field(i), snakeCase, excludeIndex); err != nil {
 				return
 			} else {
 				if value != nil {
@@ -129,7 +138,7 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 	return err
 }
 
-func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool) (*datastore.Value, error) {
+func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool, excludeFromIndexName string) (*datastore.Value, error) {
 	value := &datastore.Value{}
 	var err error
 	switch fValue.Kind() {
@@ -160,7 +169,7 @@ func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool) (*data
 			size := fValue.Len()
 			values := make([]*datastore.Value, 0)
 			for i := 0; i < size; i++ {
-				val, err := toDatastoreValue(fName, fValue.Index(i), snakeCase)
+				val, err := toDatastoreValue(fName, fValue.Index(i), snakeCase, excludeFromIndexName)
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +188,7 @@ func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool) (*data
 		for _, key := range mapValues.MapKeys() {
 			k := fmt.Sprint(key)
 			// TODO what if there is an error?
-			v, _ := toDatastoreValue(fName, mapValues.MapIndex(key), snakeCase)
+			v, _ := toDatastoreValue(fName, mapValues.MapIndex(key), snakeCase, excludeFromIndexName)
 			// fmt.Printf("key; %v, value: %v\n",k,v)
 			properties[k] = v
 		}
@@ -215,7 +224,7 @@ func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool) (*data
 			// translate any imported protobuf's that we defined ourself
 			if !fValue.IsNil() && fValue.IsValid() {
 				if importedProto, ok := reflect.ValueOf(fValue.Interface()).Interface().(proto.Message); ok {
-					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, snakeCase)
+					entityOfImportedProto, err := ProtoMessageToDatastoreEntity(importedProto, snakeCase, excludeFromIndexName)
 					if err != nil {
 						return nil, err
 					}
