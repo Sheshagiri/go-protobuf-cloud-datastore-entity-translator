@@ -135,6 +135,11 @@ message ExampleDBModelWithOptions1 {
 In this example, fields string_key_one, string_key_three and int32_field_two won't be
  indexed (https://cloud.google.com/datastore/docs/concepts/indexes#unindexed_properties).
 
+Note: If the extension is imported then `<package>.<extension>` should be passed to the `ProtoMessageToDatastoreEntity`.
+Following is an example
+```Go
+datastoreEntity, err := translator.ProtoMessageToDatastoreEntity(dbModel, true, "models.exclude_from_index")
+```
 My colleague at work wrote an [equivalent translator in python](https://github.com/Kami/python-protobuf-cloud-datastore-entity-translator).
 
 ## Tested with go1.12.6
