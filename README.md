@@ -98,6 +98,48 @@ func main() {
 }
 ```
 
+## Support for excluding the fields from being indexed buy Google Cloud Datastore
+By default, Google Cloud Datastore automatically indexes each entity (model) property.
+
+Indexing each field (entity property) is usually not desired nor needed. It also has some limitations (for example, 
+size of a simple field which is to be indexed is limited to 1500 bytes, etc.). In addition to that, unnecessary
+ indexing causes increased storage space consumption.
+
+This library allows you to define which model fields to exclude from index on the field basis utilizing Protobuf field 
+options extension.
+
+For example:
+```proto
+syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+// Custom Protobuf option which specifies which model fields should be excluded
+// from index
+// NOTE: Keep in mind that it's important not to change the option name
+// ("exclude_from_index") since this library uses that special option name to
+// determine if a field should be excluded from index.
+extend google.protobuf.FieldOptions {
+    bool exclude_from_index = 50000;
+}
+
+message ExampleDBModelWithOptions1 {
+    string string_key_one = 1 [(exclude_from_index) = true];
+    string string_key_two = 2;
+    string string_key_three = 3 [(exclude_from_index) = true];
+    string string_key_four = 4;
+    int32 int32_field_one = 5;
+    int32 int32_field_two = 6 [(exclude_from_index) = true];
+}
+```
+In this example, fields string_key_one, string_key_three and int32_field_two won't be
+ indexed (https://cloud.google.com/datastore/docs/concepts/indexes#unindexed_properties).
+
+Note: If the extension is imported then `<package>.<extension>` should be passed to the `ProtoMessageToDatastoreEntity`.
+Following is an example
+```Go
+datastoreEntity, err := translator.ProtoMessageToDatastoreEntity(dbModel, true, "models.exclude_from_index")
+```
 My colleague at work wrote an [equivalent translator in python](https://github.com/Kami/python-protobuf-cloud-datastore-entity-translator).
 
 ## Tested with go1.12.6
