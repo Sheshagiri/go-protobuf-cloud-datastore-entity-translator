@@ -142,7 +142,6 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 						// all the other pointers like referenced protobuf's
 						default:
 							if !reflect.ValueOf(fValue).IsNil() {
-								fmt.Println(dstValues.Field(i).Interface())
 								switch v := reflect.ValueOf(fValue.ValueType).Interface().(type) {
 								case *datastore.Value_EntityValue:
 									innerModel, ok := dstValues.Field(i).Interface().(proto.Message)

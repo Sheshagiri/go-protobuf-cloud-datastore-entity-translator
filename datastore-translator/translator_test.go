@@ -113,27 +113,27 @@ func TestFullyPopulatedModel(t *testing.T) {
 	assert.Equal(t, srcProto.GetInt64Key(), dstProto.GetInt64Key())
 	assert.Equal(t, srcProto.GetFloatKey(), dstProto.GetFloatKey())
 	assert.Equal(t, srcProto.GetDoubleKey(), dstProto.GetDoubleKey())
-	//TODO BlobValue returns a string
+	// TODO BlobValue returns a string
 	assert.DeepEqual(t, srcProto.GetBytesKey(), dstProto.GetBytesKey())
-	//assert string array
+	// assert string array
 	assert.DeepEqual(t, srcProto.GetStringArrayKey(), dstProto.GetStringArrayKey())
-	//assert int32 array
+	// assert int32 array
 	assert.DeepEqual(t, srcProto.Int32ArrayKey, dstProto.Int32ArrayKey)
 	// enums are converted to int's in datastore
 	assert.Equal(t, srcProto.GetEnumKey(), dstProto.GetEnumKey())
-	//assert map[string]string
+	// assert map[string]string
 	assert.DeepEqual(t, srcProto.GetMapStringString(), dstProto.GetMapStringString())
 	assert.DeepEqual(t, srcProto.GetMapStringInt32(), dstProto.GetMapStringInt32())
 
-	//assert google.protobuf.Struct
+	// assert google.protobuf.Struct
 	assert.DeepEqual(t, srcProto.GetStructKey(), dstProto.GetStructKey())
-	//extra check to see if they are really equal
+	// extra check to see if they are really equal
 	assert.Equal(t, srcProto.GetStructKey().Fields["struct-key-string"].GetStringValue(), dstProto.GetStructKey().Fields["struct-key-string"].GetStringValue())
 
-	//assert google.protobuf.timestamp
+	// assert google.protobuf.timestamp
 	assert.DeepEqual(t, srcProto.GetTimestampKey().Seconds, dstProto.GetTimestampKey().Seconds)
 
-	//assert listvalues inside the struct
+	// assert listvalues inside the struct
 	assert.DeepEqual(t, srcProto.GetStructKey().Fields["struct-key-list"].GetListValue(), dstProto.GetStructKey().Fields["struct-key-list"].GetListValue())
 }
 
