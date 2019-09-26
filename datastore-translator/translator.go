@@ -120,20 +120,39 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 							}
 						}
 					case reflect.Ptr:
-						if !reflect.ValueOf(fValue).IsNil() {
-							// switch v := dstValues.Field(i).Interface().(type) {
-							switch v := reflect.ValueOf(fValue.ValueType).Interface().(type) {
-							case *datastore.Value_EntityValue:
-								properties := v.EntityValue.Properties
-								if properties != nil {
-									s := &structpb.Struct{}
-									m := make(map[string]*structpb.Value)
-									for key, value := range properties {
-										// log.Printf("value type is: %T", value.ValueType)
-										m[key] = fromDatastoreValueToStructValue(value)
+						iv := dstValues.Field(i).Interface()
+						switch iv.(type) {
+						case *structpb.Struct:
+							if !reflect.ValueOf(fValue).IsNil() {
+								switch v := reflect.ValueOf(fValue.ValueType).Interface().(type) {
+								case *datastore.Value_EntityValue:
+									properties := v.EntityValue.Properties
+									if properties != nil {
+										s := &structpb.Struct{}
+										m := make(map[string]*structpb.Value)
+										for key, value := range properties {
+											// log.Printf("value type is: %T", value.ValueType)
+											m[key] = fromDatastoreValueToStructValue(value)
+										}
+										s.Fields = m
+										dstValues.Field(i).Set(reflect.ValueOf(s))
 									}
-									s.Fields = m
-									dstValues.Field(i).Set(reflect.ValueOf(s))
+								}
+							}
+						// all the other pointers like referenced protobuf's
+						default:
+							if !reflect.ValueOf(fValue).IsNil() {
+								fmt.Println(dstValues.Field(i).Interface())
+								switch v := reflect.ValueOf(fValue.ValueType).Interface().(type) {
+								case *datastore.Value_EntityValue:
+									innerModel, ok := dstValues.Field(i).Interface().(proto.Message)
+									if !ok {
+										return errors.New("failed to translate: %s" + fName)
+									}
+									err = DatastoreEntityToProtoMessage(v.EntityValue, innerModel, snakeCase)
+									if err != nil {
+										return nil
+									}
 								}
 							}
 						}

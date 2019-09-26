@@ -1,13 +1,15 @@
 package datastore_translator
 
 import (
+	"log"
+	"testing"
+
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	execution "github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/execution"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
 	"gotest.tools/assert"
-	"log"
-	"testing"
 )
 
 func TestAddTSSupport(t *testing.T) {
@@ -104,6 +106,31 @@ func TestNestedMessages(t *testing.T) {
 
 	dst := &unsupported.Child{}
 
+	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	assert.NilError(t, err)
+	log.Println("Destination: ", dst)
+	assert.DeepEqual(t, src, dst)
+}
+
+func TestStructInReferencedMessage(t *testing.T) {
+	src := &execution.Execution{
+		Name:                 "login",
+		Action:               &execution.Action{
+			Name:                 "ssh",
+			Parameters:           &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"host": {Kind: &structpb.Value_StringValue{StringValue:"10.10.10.10"}},
+					"port": {Kind: &structpb.Value_NumberValue{NumberValue:123456.12}},
+				},
+			},
+		},
+	}
+	log.Println("Source: ", src)
+	srcEntity, err := ProtoMessageToDatastoreEntity(src, false)
+	assert.NilError(t, err)
+	log.Println("Source Datastore Entity: ", srcEntity)
+
+	dst := &execution.Execution{}
 	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
 	assert.NilError(t, err)
 	log.Println("Destination: ", dst)
