@@ -8,13 +8,14 @@ import (
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
+	"github.com/stretchr/testify/require"
 	"gotest.tools/assert"
 	"log"
 	"testing"
 	"time"
 )
 
-const DATASTORE_CONNECT_TIMEOUT = 5 * time.Second
+const DatastoreConnectTimeout = 5 * time.Second
 
 func TestIntegration(t *testing.T) {
 	ctx := context.Background()
@@ -23,7 +24,7 @@ func TestIntegration(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
@@ -79,12 +80,15 @@ func TestIntegration(t *testing.T) {
 	assert.NilError(t, err)
 	log.Printf("entity from cloud datastore: %v", datastoreEntity)
 
-	// 7. create a protobuf that we plan to decode into
-	dstProto := &example.ExampleDBModel{}
-
-	// 8. translate the protobuf from datastore.Entity{} to our own protobuf
-	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, true)
+	// 7. translate the protobuf from datastore.Entity{} to our own protobuf
+	protoMsg, err := DatastoreEntityToProtoMessage(datastoreEntity, &example.ExampleDBModel{}, true)
 	assert.NilError(t, err)
+
+	// 8. create a protobuf that we plan to decode into
+	dstProto, ok := protoMsg.(*example.ExampleDBModel)
+	if !ok {
+		require.FailNow(t,"invalid proto message")
+	}
 
 	log.Printf("original proto                   : %v", srcProto)
 	log.Printf("datastore entity to proto message: %v", dstProto)
@@ -127,7 +131,7 @@ func TestEmptyProtoMessage(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
@@ -145,12 +149,10 @@ func TestEmptyProtoMessage(t *testing.T) {
 	datastoreEntity, err := client.GetEntity(ctx, key)
 	assert.NilError(t, err)
 
-	// 7. create a protobuf that we plan to decode into
-	dstProto := &example.ExampleDBModel{}
-
-	// 8. translate the protobuf from datastore.Entity{} to our own protobuf
-	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, true)
+	// 7. translate the protobuf from datastore.Entity{} to our own protobuf
+	protoMsg, err := DatastoreEntityToProtoMessage(datastoreEntity, &example.ExampleDBModel{}, true)
 	assert.NilError(t, err)
+	require.NotNil(t, protoMsg, "translated proto message should not be nil")
 }
 
 func TestProtoWithNilPointer(t *testing.T) {
@@ -159,7 +161,7 @@ func TestProtoWithNilPointer(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
 	defer cancel()
 
 	// 2. create a key that we plan to save into

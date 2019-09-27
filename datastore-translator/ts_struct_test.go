@@ -7,6 +7,7 @@ import (
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	execution "github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/execution"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
 	"gotest.tools/assert"
@@ -22,20 +23,18 @@ func TestAddTSSupport(t *testing.T) {
 	assert.NilError(t, err)
 	log.Println("Source Datastore Entity: ", srcEntity)
 
-	dst := &unsupported.TS{}
-
-	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	dst, err := DatastoreEntityToProtoMessage(&srcEntity, &unsupported.TS{}, false)
 	assert.NilError(t, err)
-	assert.DeepEqual(t, src, dst)
+	assert.Equal(t, true, proto.Equal(src, dst))
 }
 
 func TestAddStructSupport(t *testing.T) {
 	src := &unsupported.StructMessage{
 		StructKey: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"struct-key-string": {Kind: &structpb.Value_StringValue{"some random string in proto.Struct"}},
-				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{true}},
-				"struct-key-number": {Kind: &structpb.Value_NumberValue{float64(123456.12)}},
+				"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue:"some random string in proto.Struct"}},
+				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue:true}},
+				"struct-key-number": {Kind: &structpb.Value_NumberValue{NumberValue: 123456.12}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 				"struct-key-list": {Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
@@ -57,15 +56,13 @@ func TestAddStructSupport(t *testing.T) {
 	assert.NilError(t, err)
 	log.Println("Source Datastore Entity: ", srcEntity)
 
-	dst := &unsupported.StructMessage{}
-
-	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	dst, err := DatastoreEntityToProtoMessage(&srcEntity, &unsupported.StructMessage{}, false)
 	assert.NilError(t, err)
 	log.Println("", dst)
-	assert.DeepEqual(t, src, dst)
+	assert.Equal(t, true, proto.Equal(src, dst))
 }
 
-func TestSliceofNestedMessages(t *testing.T) {
+func TestSliceNestedMessages(t *testing.T) {
 	src := &example.ExampleDBModel{
 		ComplexArrayKey: []*example.ExampleNestedModel{
 			{
@@ -82,12 +79,10 @@ func TestSliceofNestedMessages(t *testing.T) {
 
 	log.Println("Source Datastore Entity: ", srcEntity)
 
-	dst := &example.ExampleDBModel{}
-
-	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	dst, err := DatastoreEntityToProtoMessage(&srcEntity, &example.ExampleDBModel{}, false)
 	assert.NilError(t, err)
 	log.Println("Destination: ", dst)
-	assert.DeepEqual(t, src.GetComplexArrayKey(), dst.GetComplexArrayKey())
+	assert.Equal(t, true, proto.Equal(src, dst))
 
 }
 
@@ -104,12 +99,10 @@ func TestNestedMessages(t *testing.T) {
 
 	log.Println("Source Datastore Entity: ", srcEntity)
 
-	dst := &unsupported.Child{}
-
-	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	dst, err := DatastoreEntityToProtoMessage(&srcEntity, &unsupported.Child{}, false)
 	assert.NilError(t, err)
 	log.Println("Destination: ", dst)
-	assert.DeepEqual(t, src, dst)
+	assert.Equal(t, true, proto.Equal(src, dst))
 }
 
 func TestStructInReferencedMessage(t *testing.T) {
@@ -130,9 +123,8 @@ func TestStructInReferencedMessage(t *testing.T) {
 	assert.NilError(t, err)
 	log.Println("Source Datastore Entity: ", srcEntity)
 
-	dst := &execution.Execution{}
-	err = DatastoreEntityToProtoMessage(&srcEntity, dst, false)
+	dst, err := DatastoreEntityToProtoMessage(&srcEntity, &execution.Execution{}, false)
 	assert.NilError(t, err)
 	log.Println("Destination: ", dst)
-	assert.DeepEqual(t, src, dst)
+	assert.Equal(t, true, proto.Equal(src, dst))
 }
