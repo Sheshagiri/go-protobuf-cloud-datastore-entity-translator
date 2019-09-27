@@ -16,6 +16,9 @@ branches:
 matrix:
   fast_finish: false
   include:
+    - name: Generate Protobuf's
+      script:
+        - make protobuf
     - name: Unit Tests
       script:
         - cd datastore-translator
