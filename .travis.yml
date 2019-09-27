@@ -13,17 +13,25 @@ branches:
   only:
   - master
 
+matrix:
+  fast_finish: false
+  include:
+    - name: Generate Protobuf's
+      script:
+        - make protobuf
+    - name: Unit Tests
+      script:
+        - cd datastore-translator
+        - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
+    - name: Integration Tests
+      script:
+        - cd datastore-translator
+        - go test -v ./... -race -tags=integration
+
 notifications:
   email:
     on_success: change
     on_failure: always
-
-env:
-  - PATH=$HOME/protoc/bin:$PATH
-  - DATASTORE_EMULATOR_HOST=127.0.0.1:8081
-  - DATASTORE_EMULATOR_HOST_PATH=127.0.0.1:8081/datastore
-  - DATASTORE_HOST=http://127.0.0.1:8081
-  - DATASTORE_PROJECT_ID=translator-tests
 
 install:
   - go get -u github.com/golang/protobuf/protoc-gen-go
@@ -31,14 +39,12 @@ install:
   - unzip /tmp/protoc.zip -d "$HOME"/protoc
   - mkdir -p "$HOME"/src && ln -s "$HOME"/protoc "$HOME"/src/protobuf
 
-script:
-  - echo "Generate protobuf's"
-  - make protobuf
-  - cd datastore-translator
-  - echo "Run unit tests"
-  - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
-  - echo "Run integration tests"
-  - go test -v ./... -race -tags=integration
+env:
+  - PATH=$HOME/protoc/bin:$PATH
+  - DATASTORE_EMULATOR_HOST=127.0.0.1:8081
+  - DATASTORE_EMULATOR_HOST_PATH=127.0.0.1:8081/datastore
+  - DATASTORE_HOST=http://127.0.0.1:8081
+  - DATASTORE_PROJECT_ID=translator-tests
 
 before_script:
   - ./scripts/run-datastore-emulator.sh

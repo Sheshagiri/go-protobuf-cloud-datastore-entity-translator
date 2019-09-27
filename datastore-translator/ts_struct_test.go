@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
-	execution "github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/execution"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/execution"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/struct"
 	"gotest.tools/assert"
