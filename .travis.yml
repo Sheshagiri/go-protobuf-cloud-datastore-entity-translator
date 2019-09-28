@@ -21,17 +21,13 @@ install:
   - ./scripts/run-datastore-emulator.sh
 
 env:
-  - PATH=$HOME/protoc/bin:$PATH
+  - PATH=$HOME/protoc/bin:$PATH DATASTORE_EMULATOR_HOST=127.0.0.1:8081 GO111MODULE="on"
 
 script:
   - echo "Generate Protobuf's"
   - make protobuf
   - echo "Unit Tests"
   - make unit-tests
-  # turn on go modules for 1.12
-  - if [[ "$TRAVIS_GO_VERSION" == 1.12* ]]; then
-      export GO111MODULE="on"
-    fi; 
   - echo "Integration Tests"
   - make integration-tests
 
