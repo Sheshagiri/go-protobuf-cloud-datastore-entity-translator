@@ -27,10 +27,9 @@ script:
   - echo "Generate Protobuf's"
   - make protobuf
   - echo "Unit Tests"
-  - cd datastore-translator
-  - go test -v ./... -race -coverprofile=coverage.txt -covermode=atomic
+  - make unit-tests
   - echo "Integration Tests"
-  - go test -v ./... -race -tags=integration
+  - make integration-tests
 
 notifications:
   email:
