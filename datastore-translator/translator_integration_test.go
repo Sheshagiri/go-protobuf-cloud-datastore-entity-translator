@@ -12,7 +12,6 @@ import (
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
 	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/stretchr/testify/require"
 	"gotest.tools/assert"
 )
 
@@ -81,15 +80,12 @@ func TestIntegration(t *testing.T) {
 	assert.NilError(t, err)
 	log.Printf("entity from cloud datastore: %v", datastoreEntity)
 
-	// 7. translate the protobuf from datastore.Entity{} to our own protobuf
-	protoMsg, err := DatastoreEntityToProtoMessage(datastoreEntity, &example.ExampleDBModel{}, true)
-	assert.NilError(t, err)
+	// 7. create a protobuf that we plan to decode into
+	dstProto := &example.ExampleDBModel{}
 
-	// 8. create a protobuf that we plan to decode into
-	dstProto, ok := protoMsg.(*example.ExampleDBModel)
-	if !ok {
-		require.FailNow(t, "invalid proto message")
-	}
+	// 8. translate the protobuf from datastore.Entity{} to our own protobuf
+	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, true)
+	assert.NilError(t, err)
 
 	log.Printf("original proto                   : %v", srcProto)
 	log.Printf("datastore entity to proto message: %v", dstProto)
@@ -150,10 +146,12 @@ func TestEmptyProtoMessage(t *testing.T) {
 	datastoreEntity, err := client.GetEntity(ctx, key)
 	assert.NilError(t, err)
 
-	// 7. translate the protobuf from datastore.Entity{} to our own protobuf
-	protoMsg, err := DatastoreEntityToProtoMessage(datastoreEntity, &example.ExampleDBModel{}, true)
+	// 7. create a protobuf that we plan to decode into
+	dstProto := &example.ExampleDBModel{}
+
+	// 8. translate the protobuf from datastore.Entity{} to our own protobuf
+	err = DatastoreEntityToProtoMessage(datastoreEntity, dstProto, true)
 	assert.NilError(t, err)
-	require.NotNil(t, protoMsg, "translated proto message should not be nil")
 }
 
 func TestProtoWithNilPointer(t *testing.T) {

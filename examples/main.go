@@ -57,12 +57,15 @@ func main() {
 		log.Fatalf("unable to get %v from datastore", childKey)
 	}
 
-	// 7. convert the value fetched from datastore to protobuf
-	dsExecReq, err := translator.DatastoreEntityToProtoMessage(dsEntity,&execution.ExecutionRequest{}, true)
+	// 7. create an empty protobuf
+	dsExecReq := &execution.ExecutionRequest{}
+
+	// 8. convert the value fetched from datastore to protobuf
+	err = translator.DatastoreEntityToProtoMessage(dsEntity,dsExecReq, true)
 	if err != nil {
 		log.Fatalf("error while converting to proto message, %v", err)
 	}
 
-	// 8. simply log it :)
+	// 9. simply log it :)
 	log.Println(dsExecReq)
 }

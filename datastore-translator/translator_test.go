@@ -1,16 +1,18 @@
 package datastore_translator
 
 import (
+	"log"
+	"testing"
+
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/execution"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/unsupported"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/struct"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/datastore/v1"
 	"gotest.tools/assert"
-	"log"
-	"testing"
 )
 
 func TestNestedModel(t *testing.T) {
@@ -21,7 +23,8 @@ func TestNestedModel(t *testing.T) {
 	entity, err := ProtoMessageToDatastoreEntity(srcProto, true)
 	// make sure there is no error
 	assert.NilError(t, err)
-	dstProto, err := DatastoreEntityToProtoMessage(&entity, &example.ExampleNestedModel{}, true)
+	dstProto := &example.ExampleNestedModel{}
+	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	// make sure there is no error
 	assert.NilError(t, err)
 
@@ -102,14 +105,12 @@ func TestFullyPopulatedModel(t *testing.T) {
 	// make sure there is no error
 	assert.NilError(t, err)
 	log.Println(entity)
+	dstProto := &example.ExampleDBModel{}
 
-	protoMsg, err := DatastoreEntityToProtoMessage(&entity, &example.ExampleDBModel{}, true)
+	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	// make sure there is no error
-	assert.NilError(t, err)
-	dstProto, ok := protoMsg.(*example.ExampleDBModel)
-	if !ok {
-		require.FailNow(t, "invalid proto message")
-	}
+	require.NoError(t, err)
+
 	assert.Equal(t, true, proto.Equal(srcProto, dstProto), "proto messages should be equal")
 }
 
@@ -127,12 +128,9 @@ func TestPartialModel(t *testing.T) {
 	entity, err := ProtoMessageToDatastoreEntity(partialProto, true)
 	assert.NilError(t, err, err)
 	log.Println(entity)
-	protoMsg, err := DatastoreEntityToProtoMessage(&entity, &structpb.Struct{}, true)
+	dstProto := &structpb.Struct{}
+	err = DatastoreEntityToProtoMessage(&entity, dstProto, true)
 	assert.NilError(t, err)
-	dstProto, ok := protoMsg.(*structpb.Struct)
-	if !ok {
-		require.FailNow(t, "invalid proto message")
-	}
 	// assert google.protobuf.Struct
 	assert.DeepEqual(t, partialProto.Fields["struct-key-string"], dstProto.Fields["struct-key-string"])
 }
@@ -322,4 +320,26 @@ func TestProtoWithCustomImport(t *testing.T) {
 	assert.NilError(t, err)
 	// our interest here only to compare the ComplexArrayKey
 	assert.DeepEqual(t, srcEntity.GetProperties()["ComplexArrayKey"], dstEntity.GetProperties()["ComplexArrayKey"])
+}
+
+func TestSlicedMessages(t *testing.T) {
+	tests := []proto.Message{
+		&execution.Execution{
+			Name: "a",
+		},
+		&execution.Execution{
+			Name: "b",
+		},
+	}
+	want := make([]proto.Message, 0)
+	model := &execution.Execution{}
+	for _, test := range tests {
+		dsEntity, err := ProtoMessageToDatastoreEntity(test, true)
+		require.NoError(t, err)
+		m := proto.Clone(model)
+		err = DatastoreEntityToProtoMessage(&dsEntity, m, true)
+		require.NoError(t, err)
+		want = append(want, m)
+	}
+	assert.DeepEqual(t, tests, want)
 }

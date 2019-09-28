@@ -71,10 +71,10 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFro
 }
 
 // DatastoreEntityToProtoMessage converts any given datastore.Entity to supplied proto.Message
-func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, snakeCase bool) (proto.Message, error) {
+func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, snakeCase bool) (err error) {
 	entity, err := clientSDK.ProtoToEntity(src, snakeCase)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = clientSDK.EntityToStruct(dst, entity)
@@ -146,11 +146,11 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 								case *datastore.Value_EntityValue:
 									innerModel, ok := dstValues.Field(i).Interface().(proto.Message)
 									if !ok {
-										return nil, errors.New("failed to translate: %s" + fName)
+										return errors.New("failed to translate: %s" + fName)
 									}
-									_, err = DatastoreEntityToProtoMessage(v.EntityValue, innerModel, snakeCase)
+									err = DatastoreEntityToProtoMessage(v.EntityValue, innerModel, snakeCase)
 									if err != nil {
-										return nil, err
+										return nil
 									}
 								}
 							}
@@ -160,7 +160,7 @@ func DatastoreEntityToProtoMessage(src *datastore.Entity, dst proto.Message, sna
 			}
 		}
 	}
-	return dst, err
+	return err
 }
 
 func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool, excludeFromIndexName string) (*datastore.Value, error) {
