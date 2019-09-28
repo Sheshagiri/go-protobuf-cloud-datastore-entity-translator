@@ -32,8 +32,8 @@ func TestAddStructSupport(t *testing.T) {
 	src := &unsupported.StructMessage{
 		StructKey: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue:"some random string in proto.Struct"}},
-				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue:true}},
+				"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue: "some random string in proto.Struct"}},
+				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue: true}},
 				"struct-key-number": {Kind: &structpb.Value_NumberValue{NumberValue: 123456.12}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 				"struct-key-list": {Kind: &structpb.Value_ListValue{
@@ -107,13 +107,13 @@ func TestNestedMessages(t *testing.T) {
 
 func TestStructInReferencedMessage(t *testing.T) {
 	src := &execution.Execution{
-		Name:                 "login",
-		Action:               &execution.Action{
-			Name:                 "ssh",
-			Parameters:           &structpb.Struct{
+		Name: "login",
+		Action: &execution.Action{
+			Name: "ssh",
+			Parameters: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"host": {Kind: &structpb.Value_StringValue{StringValue:"10.10.10.10"}},
-					"port": {Kind: &structpb.Value_NumberValue{NumberValue:123456.12}},
+					"host": {Kind: &structpb.Value_StringValue{StringValue: "10.10.10.10"}},
+					"port": {Kind: &structpb.Value_NumberValue{NumberValue: 123456.12}},
 				},
 			},
 		},

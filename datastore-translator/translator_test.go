@@ -25,7 +25,7 @@ func TestNestedModel(t *testing.T) {
 	// make sure there is no error
 	assert.NilError(t, err)
 
-	assert.Equal(t, true,proto.Equal(srcProto, dstProto), "before and after translation proto messages should be equal")
+	assert.Equal(t, true, proto.Equal(srcProto, dstProto), "before and after translation proto messages should be equal")
 }
 
 func TestProtoMessageToDatastoreEntityWithExcludeFieldsFromIndex(t *testing.T) {
@@ -78,9 +78,9 @@ func TestFullyPopulatedModel(t *testing.T) {
 		},
 		StructKey: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue:"some random string in proto.Struct"}},
-				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue:true}},
-				"struct-key-number": {Kind: &structpb.Value_NumberValue{NumberValue:123456.12}},
+				"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue: "some random string in proto.Struct"}},
+				"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue: true}},
+				"struct-key-number": {Kind: &structpb.Value_NumberValue{NumberValue: 123456.12}},
 				"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 				"struct-key-list": {Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
@@ -108,7 +108,7 @@ func TestFullyPopulatedModel(t *testing.T) {
 	assert.NilError(t, err)
 	dstProto, ok := protoMsg.(*example.ExampleDBModel)
 	if !ok {
-		require.FailNow(t,"invalid proto message")
+		require.FailNow(t, "invalid proto message")
 	}
 	assert.Equal(t, true, proto.Equal(srcProto, dstProto), "proto messages should be equal")
 }
@@ -119,7 +119,7 @@ func TestPartialModel(t *testing.T) {
 			"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue: "some random string in proto.Struct"}},
 			// not ready for this yet
 			// "struct-key-list":   {Kind: &structpb.Value_ListValue{}},
-			"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue:true}},
+			"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue: true}},
 			"struct-key-number": {Kind: &structpb.Value_NumberValue{NumberValue: 123456.12}},
 			"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 		},
@@ -131,7 +131,7 @@ func TestPartialModel(t *testing.T) {
 	assert.NilError(t, err)
 	dstProto, ok := protoMsg.(*structpb.Struct)
 	if !ok {
-		require.FailNow(t,"invalid proto message")
+		require.FailNow(t, "invalid proto message")
 	}
 	// assert google.protobuf.Struct
 	assert.DeepEqual(t, partialProto.Fields["struct-key-string"], dstProto.Fields["struct-key-string"])
@@ -235,10 +235,10 @@ func TestStructValueDatastoreValue(t *testing.T) {
 				Kind: &structpb.Value_StructValue{
 					StructValue: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue:"some random string in proto.Struct"}},
+							"struct-key-string": {Kind: &structpb.Value_StringValue{StringValue: "some random string in proto.Struct"}},
 							// not ready for this yet
 							// "struct-key-list":   {Kind: &structpb.Value_ListValue{}},
-							"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue:true}},
+							"struct-key-bool":   {Kind: &structpb.Value_BoolValue{BoolValue: true}},
 							"struct-key-number": {Kind: &structpb.Value_NumberValue{NumberValue: 123456.12}},
 							"struct-key-null":   {Kind: &structpb.Value_NullValue{}},
 						},
@@ -249,10 +249,10 @@ func TestStructValueDatastoreValue(t *testing.T) {
 				ValueType: &datastore.Value_EntityValue{
 					EntityValue: &datastore.Entity{
 						Properties: map[string]*datastore.Value{
-							"struct-key-string": {ValueType: &datastore.Value_StringValue{StringValue:"some random string in proto.Struct"}},
+							"struct-key-string": {ValueType: &datastore.Value_StringValue{StringValue: "some random string in proto.Struct"}},
 							// not ready for this yet
 							// "struct-key-list":   {ValueType: &datastore.Value_ArrayValue{}},
-							"struct-key-bool":   {ValueType: &datastore.Value_BooleanValue{BooleanValue:true}},
+							"struct-key-bool":   {ValueType: &datastore.Value_BooleanValue{BooleanValue: true}},
 							"struct-key-number": {ValueType: &datastore.Value_DoubleValue{DoubleValue: 123456.12}},
 							"struct-key-null":   {ValueType: &datastore.Value_NullValue{}},
 						},
