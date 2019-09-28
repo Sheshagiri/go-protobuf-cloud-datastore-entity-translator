@@ -3,16 +3,17 @@
 package datastore_translator
 
 import (
-	"cloud.google.com/go/datastore"
 	"context"
-	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/struct"
-	"github.com/stretchr/testify/require"
-	"gotest.tools/assert"
 	"log"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/datastore"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/golang/protobuf/ptypes"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/stretchr/testify/require"
+	"gotest.tools/assert"
 )
 
 const DatastoreConnectTimeout = 5 * time.Second
@@ -21,7 +22,7 @@ func TestIntegration(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. create a new datastore client
-	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
+	client, err := datastore.NewClient(ctx, "translator-tests")
 	assert.NilError(t, err)
 
 	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
@@ -87,7 +88,7 @@ func TestIntegration(t *testing.T) {
 	// 8. create a protobuf that we plan to decode into
 	dstProto, ok := protoMsg.(*example.ExampleDBModel)
 	if !ok {
-		require.FailNow(t,"invalid proto message")
+		require.FailNow(t, "invalid proto message")
 	}
 
 	log.Printf("original proto                   : %v", srcProto)

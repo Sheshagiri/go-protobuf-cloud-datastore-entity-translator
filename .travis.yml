@@ -28,6 +28,10 @@ script:
   - make protobuf
   - echo "Unit Tests"
   - make unit-tests
+  # turn on go modules for 1.12
+  - if [[ "$TRAVIS_GO_VERSION" == 1.12* ]]; then
+      export GO111MODULE="on"
+    fi; 
   - echo "Integration Tests"
   - make integration-tests
 
