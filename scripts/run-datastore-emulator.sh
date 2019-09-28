@@ -13,6 +13,11 @@ EMULATOR_PID=$!
 # Give process some time to start up
 sleep 5
 
+export DATASTORE_EMULATOR_HOST=127.0.0.1:8081
+export DATASTORE_EMULATOR_HOST_PATH=127.0.0.1:8081/datastore
+export DATASTORE_HOST=http://127.0.0.1:8081
+export DATASTORE_PROJECT_ID=translator-tests
+
 if ps -p ${EMULATOR_PID} > /dev/null; then
     echo "google cloud datastore emulator successfully started"
     tail -30 /tmp/emulator.log
