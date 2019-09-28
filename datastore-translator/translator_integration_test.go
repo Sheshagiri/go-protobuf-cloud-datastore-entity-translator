@@ -3,27 +3,28 @@
 package datastore_translator
 
 import (
-	"cloud.google.com/go/datastore"
 	"context"
-	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/struct"
-	"gotest.tools/assert"
 	"log"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/datastore"
+	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/example"
+	"github.com/golang/protobuf/ptypes"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"gotest.tools/assert"
 )
 
-const DATASTORE_CONNECT_TIMEOUT = 5 * time.Second
+const DatastoreConnectTimeout = 5 * time.Second
 
 func TestIntegration(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. create a new datastore client
-	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
+	client, err := datastore.NewClient(ctx, "translator-tests")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
@@ -127,7 +128,7 @@ func TestEmptyProtoMessage(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
 	defer cancel()
 
 	// 2. create a key that we plan to save into
@@ -159,7 +160,7 @@ func TestProtoWithNilPointer(t *testing.T) {
 	client, err := datastore.NewClient(ctx, "st2-saas-prototype-dev")
 	assert.NilError(t, err)
 
-	ctx, cancel := context.WithTimeout(ctx, DATASTORE_CONNECT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, DatastoreConnectTimeout)
 	defer cancel()
 
 	// 2. create a key that we plan to save into

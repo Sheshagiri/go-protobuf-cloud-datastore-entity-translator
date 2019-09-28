@@ -17,3 +17,13 @@ message ExecutionRequest {
     google.protobuf.Struct parameters = 4 [(exclude_from_index) = true];
     bytes result = 5 [(exclude_from_index) = true];
 }
+
+message Action {
+    string name = 1;
+    google.protobuf.Struct parameters = 2;
+}
+
+message Execution {
+    string name = 1;
+    Action action = 2;
+}

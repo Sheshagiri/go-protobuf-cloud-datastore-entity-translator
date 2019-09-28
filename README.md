@@ -9,7 +9,7 @@
 
 This is largely inspired from being able to persist protocol buffers to Google Cloud Datastore. Protobuf messages that the datstore supports are listed [here](https://github.com/googleapis/googleapis/blob/c50d9e822e19e069b7e3758736ea58cb4f35267c/google/datastore/v1/entity.proto#L188).
  
-This repository acts as atranslator to translate any given ``proto.Message`` to ``datastore.Entity`` that the datastore understands and 
+This repository acts as a translator to translate any given ``proto.Message`` to ``datastore.Entity`` that the datastore understands and 
 ``datastore.Entity`` to any ``proto.Message``.
 
 This repository also addresses some of the limitations that [google-cloud-go](https://github.com/googleapis/google-cloud-go/tree/master/datastore) has.
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// 3. translate the protobuf message to the format that datastore understands
-	entity, err := translator.ProtoMessageToDatastoreEntity(execReq, true, nil)
+	entity, err := translator.ProtoMessageToDatastoreEntity(execReq, true)
 	if err != nil {
 		log.Fatalf("unable to translate execution request to datastore format, error: %v", err)
 	}
@@ -84,16 +84,13 @@ func main() {
 		log.Fatalf("unable to get %v from datastore", childKey)
 	}
 
-	// 7. create an empty protobuf
-	dsExecReq := &execution.ExecutionRequest{}
-
-	// 8. convert the value fetched from datastore to protobuf
-	err = translator.DatastoreEntityToProtoMessage(dsEntity,dsExecReq, true, nil)
+	// 7. convert the value fetched from datastore to protobuf
+	dsExecReq, err := translator.DatastoreEntityToProtoMessage(dsEntity,&execution.ExecutionRequest{}, true)
 	if err != nil {
 		log.Fatalf("error while converting to proto message, %v", err)
 	}
 
-	// 9. simply log it :)
+	// 8. simply log it :)
 	log.Println(dsExecReq)
 }
 ```
