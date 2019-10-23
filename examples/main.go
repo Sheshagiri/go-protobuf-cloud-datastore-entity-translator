@@ -6,7 +6,7 @@ import (
 	"log"
 	"github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/models/execution"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"github.com/golang/protobuf/ptypes/struct"
 	translator "github.com/Sheshagiri/go-protobuf-cloud-datastore-entity-translator/datastore-translator"
 )
@@ -23,7 +23,7 @@ func main() {
 	// 2. create a protobuf message
 	execReq := &execution.ExecutionRequest{
 		StartedOn:ptypes.TimestampNow(),
-		Uuid:uuid.New(),
+		Uuid:uuid.New().String(),
 		Action:"create_vm",
 		Parameters: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
