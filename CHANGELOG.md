@@ -1,6 +1,8 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.0.3] - 23rd October 2019
+No major changes to the functionality. Removed indirect dependencies from `go.mod`.
 
 ## [1.0.2] - 28th September 2019
 This release adds support for protobuf's with `google.protobuf.Struct` from referenced/imported proto files. 
