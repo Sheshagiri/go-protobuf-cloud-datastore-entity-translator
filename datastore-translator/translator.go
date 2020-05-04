@@ -31,7 +31,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFro
 	excludeFromIndexExt := "[exclude_from_index]:true "
 	var excludeIndex string
 	// use the Extension name is passed else derive it dynamically
-	if excludeFromIndexName != nil && len(excludeFromIndexName) > 0 {
+	if len(excludeFromIndexName) > 0 {
 		excludeFromIndexExt = fmt.Sprintf("[%s]:true ", excludeFromIndexName[0])
 		excludeIndex = excludeFromIndexName[0]
 	} else {
