@@ -9,10 +9,6 @@ dist: xenial
 
 sudo: false
 
-branches:
-  only:
-  - master
-
 install:
   - go get -u github.com/golang/protobuf/protoc-gen-go
   - curl -L https://github.com/protocolbuffers/protobuf/releases/download/v3.9.1/protoc-3.9.1-linux-x86_64.zip -o /tmp/protoc.zip

@@ -41,7 +41,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFro
 		}
 	}
 
-	excludeFields := make(map[string]string, 0)
+	excludeFields := make(map[string]string)
 	for _, fd := range md.GetField() {
 		if fd.GetOptions() != nil {
 			excludeFields[fd.GetName()] = fd.GetOptions().String()
@@ -192,7 +192,7 @@ func toDatastoreValue(fName string, fValue reflect.Value, snakeCase bool, exclud
 			}
 		} else {
 			size := fValue.Len()
-			values := make([]*datastore.Value, 0)
+			values := make([]*datastore.Value)
 			for i := 0; i < size; i++ {
 				val, err := toDatastoreValue(fName, fValue.Index(i), snakeCase, excludeFromIndexName)
 				if err != nil {
@@ -290,7 +290,7 @@ func fromStructValueToDatastoreValue(v *structpb.Value) *datastore.Value {
 			NullValue: v.GetNullValue(),
 		}
 	case *structpb.Value_ListValue:
-		values := make([]*datastore.Value, 0)
+		values := make([]*datastore.Value)
 		for _, val := range v.GetListValue().Values {
 			values = append(values, fromStructValueToDatastoreValue(val))
 		}
@@ -301,7 +301,7 @@ func fromStructValueToDatastoreValue(v *structpb.Value) *datastore.Value {
 		}
 	case *structpb.Value_StructValue:
 		structValue := v.GetStructValue()
-		properties := make(map[string]*datastore.Value, 0)
+		properties := make(map[string]*datastore.Value)
 		for key, value := range structValue.GetFields() {
 			properties[key] = fromStructValueToDatastoreValue(value)
 		}
@@ -338,7 +338,7 @@ func fromDatastoreValueToStructValue(v *datastore.Value) *structpb.Value {
 			},
 		}
 	case *datastore.Value_ArrayValue:
-		values := make([]*structpb.Value, 0)
+		values := make([]*structpb.Value)
 		for _, val := range v.ArrayValue.Values {
 			values = append(values, fromDatastoreValueToStructValue(val))
 		}
