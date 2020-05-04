@@ -41,7 +41,7 @@ func ProtoMessageToDatastoreEntity(src proto.Message, snakeCase bool, excludeFro
 		}
 	}
 
-	excludeFields := make(map[string]string, 0)
+	excludeFields := make(map[string]string)
 	for _, fd := range md.GetField() {
 		if fd.GetOptions() != nil {
 			excludeFields[fd.GetName()] = fd.GetOptions().String()
@@ -301,7 +301,7 @@ func fromStructValueToDatastoreValue(v *structpb.Value) *datastore.Value {
 		}
 	case *structpb.Value_StructValue:
 		structValue := v.GetStructValue()
-		properties := make(map[string]*datastore.Value, 0)
+		properties := make(map[string]*datastore.Value)
 		for key, value := range structValue.GetFields() {
 			properties[key] = fromStructValueToDatastoreValue(value)
 		}
