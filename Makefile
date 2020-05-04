@@ -13,3 +13,9 @@ unit-tests: deps
 integration-tests: deps
 	@echo "Running Integration Tests"
 	go test -v ./... -mod=vendor -race -tags=integration
+
+clean:
+	# cleans the test cache
+	go clean -testcache
+	# cleans the go modules cache
+	go clean --modcache
